@@ -8,6 +8,7 @@ import org.apache.hadoop.mapreduce.*;
 import org.apache.hadoop.util.Tool;
 import org.apache.hadoop.util.ToolRunner;
 import org.apache.hadoop.conf.*;
+
 public class OSMGrid extends Configured implements Tool {
 	public static class OSMMapper extends Mapper<Object, Text, WritablePoint, LongWritable> {
 		private WritablePoint node = new WritablePoint(0,0);
@@ -148,12 +149,12 @@ public class OSMGrid extends Configured implements Tool {
 	}
 
 	public static class OSMReducer extends Reducer<WritablePoint, LongWritable, WritablePoint, Text>{
-		private MultipleOutputs out;
+		private MultipleOutputs<WritablePoint, Text> out;
 		private int part;
 		private int grid;
 		public static String GRID = "mapreduce.reducer.grid";
 		public void setup(Context context){
-			out = new MultipleOutputs(context);
+			out = new MultipleOutputs<WritablePoint, Text>(context);
 			Configuration conf = context.getConfiguration();
 			part = conf.getInt("mapred.task.partition", 0);
 			grid = conf.getInt(GRID, 0);
@@ -205,7 +206,7 @@ public class OSMGrid extends Configured implements Tool {
 		System.exit(ToolRunner.run(grid, args));
 	}
 
-public class WritableRectangle implements WritableComparable<WritableRectangle>{
+	public class WritableRectangle implements WritableComparable<WritableRectangle>{
 		private double x;		
 		private double y;
 		private double h;
