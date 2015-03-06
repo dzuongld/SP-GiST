@@ -102,7 +102,7 @@ public abstract class HSPIndex<T, K> {
 					//we got the next node but we need to check if it is a leaf and convert it to an
 					//index node if it is :: This only happens if PathShrink == NEVER && nodeshrink == false
 					if(ind.children.get(index) instanceof HSPLeafNode<?,?>){
-						HSPIndexNode<T,K> replace = new HSPIndexNode<T,K>(ind.children.get(index).getPredicate(),ind.children.get(index).getParent(), this, level+1);
+						HSPIndexNode<T,K> replace = new HSPIndexNode<T,K>(ind.children.get(index).getPredicate(), ind, this, level+1);
 						ind.children.set(index, replace);
 					}
 				}
@@ -122,6 +122,7 @@ public abstract class HSPIndex<T, K> {
 			for(int i = 0; i < ind.children.size(); i++){
 				if(consistent(ind.children.get(i), key, level)){
 					index = i;
+					break;
 				}
 			}
 			if(index == -1){
@@ -142,20 +143,17 @@ public abstract class HSPIndex<T, K> {
 			HSPIndexNode<T,K> replace;
 			boolean overfull = picksplit(leaf, level, keysets, preds);
 			do{
-				ArrayList<HSPNode<T,K>> children = new ArrayList<HSPNode<T,K>>();
 				replace = new HSPIndexNode<T,K>(leaf.getPredicate(), leaf.getParent());
+				for(int i = 0; i < keysets.size(); i++){
+					if(keysets.get(i).size() != 0 || nodeShrink == false){
+						replace.children.add(new HSPLeafNode<T,K>(replace, keysets.get(i), preds.get(i)));
+					}
+				}
 				if(leaf.getParent()!=null){
 					int index = ((HSPIndexNode<T,K>) leaf.getParent()).children.indexOf(leaf);
 					//Replace the leaf version with the index version in its parent
 					((HSPIndexNode<T,K>) leaf.getParent()).children.set(index, replace);
 				}
-				for(int i = 0; i < keysets.size(); i++){
-					if(keysets.get(i).size() != 0 || nodeShrink == false){
-						children.add(new HSPLeafNode<T,K>(replace, keysets.get(i), preds.get(i)));
-					}
-				}
-				
-				replace.children = children;
 				level++;
 				if(overfull){
 					//only one child can be overfull on a decomposition
@@ -163,6 +161,9 @@ public abstract class HSPIndex<T, K> {
 						if(((HSPLeafNode<T,K>)replace.children.get(i)).keys.size() > numSpaceParts){
 							leaf = ((HSPLeafNode<T,K>)replace.children.get(i));
 						}
+				}
+				else{
+					return replace;
 				}
 			}while((overfull = picksplit(leaf, level, keysets, preds)));
 			return replace;

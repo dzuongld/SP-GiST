@@ -78,6 +78,7 @@ public class HSPIndexNode<T,K>  extends HSPNode<T,K> implements WritableComparab
 			}
 		}
 	}
+	
 	public int compareTo(HSPIndexNode<T,K> o){
 		return this.children.toString().compareTo(o.children.toString());
 	}

@@ -84,6 +84,7 @@ public class LocalIndexConstructor<MKIn, MVIn, MKOut, MVOut, Pred> extends Confi
 		public void setup(Context context){
 			local = index;
 		}
+		@SuppressWarnings("unchecked")
 		public void reduce(MKOut key, Iterable<MVOut> values, Context context) throws IOException, InterruptedException {
 			//Vals are ultimately meaningless, took me until just now to pretty much realize that fact
 			System.out.println(key);
@@ -93,7 +94,7 @@ public class LocalIndexConstructor<MKIn, MVIn, MKOut, MVOut, Pred> extends Confi
 		public void cleanup(Context context) throws IOException, InterruptedException{
 			ArrayList<HSPNode<Pred,MKOut>> stack = new ArrayList<HSPNode<Pred,MKOut>>();
 			HSPNode<Pred,MKOut> node = root;
-			while(stack.size() != 0 || node != null){
+			while(!(stack.size() == 0 && node == null)){
 				if(node != null){
 					if(node instanceof HSPIndexNode<?,?>){
 						HSPIndexNode<Pred,MKOut> temp = (HSPIndexNode<Pred,MKOut>)node;

@@ -3,7 +3,6 @@ package edu.purdue.cs.HSPGiST;
 import java.util.ArrayList;
 
 public class GridTree extends HSPIndex<WritableRectangle,WritablePoint>{
-
 	GridTree(){
 		numSpaceParts = 4;
 		resolution = 50;
@@ -44,8 +43,8 @@ public class GridTree extends HSPIndex<WritableRectangle,WritablePoint>{
 						childrenKeys.get(1).add(p);
 				}
 			}
-			return childrenKeys.get(0).size() != 0 && childrenKeys.get(1).size() != 0 
-					&& childrenKeys.get(2).size() != 0 && childrenKeys.get(3).size() != 0;
+			return childrenKeys.get(0).size() == numSpaceParts || childrenKeys.get(1).size() == numSpaceParts 
+					|| childrenKeys.get(2).size() == numSpaceParts && childrenKeys.get(3).size() == numSpaceParts;
 		}
 		WritableRectangle predic = leaf.getPredicate();
 		if(predic == null)
@@ -72,8 +71,8 @@ public class GridTree extends HSPIndex<WritableRectangle,WritablePoint>{
 			else
 				childrenKeys.get(3).add(p);
 		}
-		return childrenKeys.get(0).size() != 0 && childrenKeys.get(1).size() != 0 
-				&& childrenKeys.get(2).size() != 0 && childrenKeys.get(3).size() != 0;
+		return childrenKeys.get(0).size() == numSpaceParts || childrenKeys.get(1).size() == numSpaceParts 
+				|| childrenKeys.get(2).size() == numSpaceParts || childrenKeys.get(3).size() == numSpaceParts;
 	}
 
 	@Override
