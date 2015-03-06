@@ -135,14 +135,16 @@ public abstract class HSPIndex<T, K> {
 		//If we get here we are a leaf
 		HSPLeafNode<T,K> leaf =((HSPLeafNode<T,K>)curr);
 		if(leaf.keys.size() == blocksize){
-			ArrayList<ArrayList<K>> keysets = new ArrayList<ArrayList<K>>();
-			for(int i = 0; i < numSpaceParts; i++){
-				keysets.add(new ArrayList<K>());
-			}
-			ArrayList<T> preds = new ArrayList<T>();
-			HSPIndexNode<T,K> replace;
-			boolean overfull = picksplit(leaf, level, keysets, preds);
-			do{
+			
+			boolean overfull;
+			while(true){
+				ArrayList<ArrayList<K>> keysets = new ArrayList<ArrayList<K>>();
+				for(int i = 0; i < numSpaceParts; i++){
+					keysets.add(new ArrayList<K>());
+				}
+				ArrayList<T> preds = new ArrayList<T>();
+				HSPIndexNode<T,K> replace;
+				overfull = picksplit(leaf, level, keysets, preds);
 				replace = new HSPIndexNode<T,K>(leaf.getPredicate(), leaf.getParent());
 				for(int i = 0; i < keysets.size(); i++){
 					if(keysets.get(i).size() != 0 || nodeShrink == false){
@@ -158,15 +160,14 @@ public abstract class HSPIndex<T, K> {
 				if(overfull){
 					//only one child can be overfull on a decomposition
 					for(int i = 0; i < replace.children.size();i++)
-						if(((HSPLeafNode<T,K>)replace.children.get(i)).keys.size() > numSpaceParts){
+						if(((HSPLeafNode<T,K>)replace.children.get(i)).keys.size() >= numSpaceParts){
 							leaf = ((HSPLeafNode<T,K>)replace.children.get(i));
 						}
 				}
 				else{
 					return replace;
 				}
-			}while((overfull = picksplit(leaf, level, keysets, preds)));
-			return replace;
+			}
 		}
 		else{
 			leaf.keys.add(key);

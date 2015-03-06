@@ -87,7 +87,6 @@ public class LocalIndexConstructor<MKIn, MVIn, MKOut, MVOut, Pred> extends Confi
 		@SuppressWarnings("unchecked")
 		public void reduce(MKOut key, Iterable<MVOut> values, Context context) throws IOException, InterruptedException {
 			//Vals are ultimately meaningless, took me until just now to pretty much realize that fact
-			System.out.println(key);
 			root = local.insert(root, (MKOut) ((WritablePoint)key).clone(), 1);
 		}
 		@SuppressWarnings("unchecked")

@@ -44,11 +44,12 @@ public class GridTree extends HSPIndex<WritableRectangle,WritablePoint>{
 				}
 			}
 			return childrenKeys.get(0).size() == numSpaceParts || childrenKeys.get(1).size() == numSpaceParts 
-					|| childrenKeys.get(2).size() == numSpaceParts && childrenKeys.get(3).size() == numSpaceParts;
+					|| childrenKeys.get(2).size() == numSpaceParts || childrenKeys.get(3).size() == numSpaceParts;
 		}
 		WritableRectangle predic = leaf.getPredicate();
-		if(predic == null)
+		if(predic == null){
 			return false;
+		}
 		double x = predic.getX();
 		double y = predic.getY();
 		double h = predic.getH();
@@ -71,8 +72,15 @@ public class GridTree extends HSPIndex<WritableRectangle,WritablePoint>{
 			else
 				childrenKeys.get(3).add(p);
 		}
-		return childrenKeys.get(0).size() == numSpaceParts || childrenKeys.get(1).size() == numSpaceParts 
-				|| childrenKeys.get(2).size() == numSpaceParts || childrenKeys.get(3).size() == numSpaceParts;
+		boolean test0 = childrenKeys.get(0).size() == numSpaceParts;
+		System.out.println(test0);
+		boolean test1 = childrenKeys.get(1).size() == numSpaceParts;
+		System.out.println(test1);
+		boolean test2 = childrenKeys.get(2).size() == numSpaceParts;
+		System.out.println(test2);
+		boolean test3 = childrenKeys.get(3).size() == numSpaceParts;
+		System.out.println(test3);
+		return test0 || test1 || test2 ||test3;  
 	}
 
 	@Override
