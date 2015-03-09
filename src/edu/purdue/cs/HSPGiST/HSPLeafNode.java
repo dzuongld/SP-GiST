@@ -14,20 +14,21 @@ import org.apache.hadoop.io.WritableComparable;
  *
  * @param <T> Predicate Type
  * @param <K> Key Type
+ * @param <R> Record Type
  */
-public class HSPLeafNode<T,K> extends HSPNode<T,K> implements WritableComparable<HSPLeafNode<T,K>>{
-	public ArrayList<K> keys;
-	
-	public HSPLeafNode(HSPIndexNode<T,K> parent){
+public class HSPLeafNode<T,K,R> extends HSPNode<T,K,R> implements WritableComparable<HSPLeafNode<T,K,R>>{
+	public ArrayList<Pair<K,R>> keys;
+	public ArrayList<R> records;
+	public HSPLeafNode(HSPIndexNode<T,K,R> parent){
 		setParent(parent);
-		keys = new ArrayList<K>();
+		keys = new ArrayList<Pair<K,R>>();
 	}
-	public HSPLeafNode(HSPIndexNode<T,K> parent,T predicate){
+	public HSPLeafNode(HSPIndexNode<T,K,R> parent,T predicate){
 		setParent(parent);
-		keys = new ArrayList<K>();
+		keys = new ArrayList<Pair<K,R>>();
 		setPredicate(predicate);
 	}
-	public HSPLeafNode(HSPIndexNode<T,K> parent,ArrayList<K> keys, T predicate){
+	public HSPLeafNode(HSPIndexNode<T,K,R> parent,ArrayList<Pair<K,R>> keys, T predicate){
 		setParent(parent);
 		this.keys = keys;
 		setPredicate(predicate);
@@ -36,7 +37,7 @@ public class HSPLeafNode<T,K> extends HSPNode<T,K> implements WritableComparable
 		if(getParent() == null)
 			return "";
 		StringBuilder stren = new StringBuilder("Keys:");
-		for(K key : keys)
+		for(Pair<K,R> key : keys)
 			stren.append(key.toString() + "\n");
 		return stren.toString();
 	}
@@ -51,7 +52,8 @@ public class HSPLeafNode<T,K> extends HSPNode<T,K> implements WritableComparable
 		
 	}
 	@Override
-	public int compareTo(HSPLeafNode<T, K> o) {
+	public int compareTo(HSPLeafNode<T, K,R> o) {
+		//TODO: Implement more robust compareTo method
 		return this.keys.toString().compareTo(o.keys.toString());
 	}
 }

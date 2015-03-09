@@ -6,8 +6,12 @@ import java.io.IOException;
 
 import org.apache.hadoop.io.WritableComparable;
 
-
-public class WritablePoint implements WritableComparable<WritablePoint>{
+/**
+ * Quick and dirty implementation of a writecomparable point for debug usage
+ * @author Stefan Brinton
+ *
+ */
+public class WritablePoint implements WritableComparable<WritablePoint>, Copyable<WritablePoint>{
 	private double x;
 	private double y;
 	public WritablePoint() {}
@@ -37,7 +41,7 @@ public class WritablePoint implements WritableComparable<WritablePoint>{
 		out.writeDouble(y);
 	}
 	public int hashCode() {
-		//I don't really care about a high collision rate
+		//TODO: rewrite hashcode to generate a proper hashcode
 		return (int) (x*y); 
 	}
 	public boolean equals(Object o) {
@@ -56,5 +60,8 @@ public class WritablePoint implements WritableComparable<WritablePoint>{
 	}
 	public WritablePoint clone(){
 		return new WritablePoint(x,y);
+	}
+	public WritablePoint copy(){
+		return clone();
 	}
 }

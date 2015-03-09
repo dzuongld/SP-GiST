@@ -5,9 +5,10 @@ package edu.purdue.cs.HSPGiST;
  *
  * @param <T> Node predicate type
  * @param <K> Node key type
+ * @param <R> Node record type
  */
-public abstract class HSPNode<T,K>{
-	private HSPNode<T,K> parent;
+public abstract class HSPNode<T,K,R>{
+	private HSPNode<T,K,R> parent;
 	private T predicate;
 	/**
 	 * Predicate setter method
@@ -24,10 +25,10 @@ public abstract class HSPNode<T,K>{
 		return predicate;
 	}
 	
-	public void setParent(HSPNode<T,K> parent){
+	public void setParent(HSPNode<T,K,R> parent){
 		this.parent = parent;
 	}
-	public HSPNode<T,K> getParent(){
+	public HSPNode<T,K,R> getParent(){
 		return parent;
 	}
 }

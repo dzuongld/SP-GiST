@@ -19,7 +19,9 @@ import java.util.ArrayList;
 public abstract class Parser<KeyIn,ValueIn,KeyOut,ValueOut> {
 	public boolean isArrayParse = false;
 	//These two variables allow the local index constructor to know them for setting the output classes
+	@SuppressWarnings("rawtypes")
 	public Class keyout;
+	@SuppressWarnings("rawtypes")
 	public Class valout;
 	/**
 	 * Used to parse key-value pairs that generate a single output key-value pair

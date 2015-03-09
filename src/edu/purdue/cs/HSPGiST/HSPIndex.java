@@ -9,11 +9,12 @@ import java.util.ArrayList;
  *
  * @param <T> The type of the node predicates
  * @param <K> The type of the node keys
+ * @param <R> The type of the node records
  */
-public abstract class HSPIndex<T, K> {
+public abstract class HSPIndex<T, K, R> {
 	public int numSpaceParts;
 	//This is a dummy value for now
-	public static final int blocksize = 4;
+	public static final int blocksize = 10;
 	
 	/**
 	 * Maximum Number of decompositions allowed
@@ -44,27 +45,26 @@ public abstract class HSPIndex<T, K> {
 	 * @param level The depth within the tree (root is considered depth 1)
 	 * @return True if the key is consistent with the node's predicate
 	 */
-	public abstract boolean consistent(HSPNode<T,K> e, K q, int level);
+	public abstract boolean consistent(HSPNode<T,K,R> e, K q, int level);
 	
 	/**
 	 * Governs splitting of an overfull leaf into numSpaceParts leaves
 	 * also governs nodeshrink == false && pathshrink == NEVER trees creation of index nodes
 	 * with correct predicates (if you have a tree with those values you will never split
 	 * overfull nodes because they can't exist so this method is fundamentally different) 
-	 * @param leaf The keys inside the overfull leaf
-	 * @param level The depth into the tree of the overfull tree (root is depth 1)
-	 * @param childrenKeys This is a return container, the keys
-	 * should be partitioned into numSpaceParts ArrayLists these ArrayLists will be
-	 * the key lists for the newly made leaves including empty leaves
-	 * (This ArrayList of ArrayLists will be initialized on both levels with the correct number of ArrayLists)
+	 * @param leaf The overfull leaf
+	 * @param level The depth into the tree of the overfull leaf (root is depth 1)
+	 * @param childrenData This is a return container, the data (keys and records) should
+	 * be partitioned into the numSpaceParts ArrayLists inside this ArrayList 
+	 * (This ArrayList of ArrayLists will be initialized; you shouldn't initialize it)
 	 * @param childrenPredicates This is a return container, the predicates for each
 	 * child node should be stored here
-	 * <br>Note: ArrayList 0 and Predicate 0 are assumed to belong to the same child
+	 * <br>Note: ArrayList k and Predicate k, where 0<=k<numSpaceParts, are assumed to belong to the same child
 	 * no checks will be performed for Keys and Predicates consistency
-	 * @return True if a child will remain overfull or further splitting is needed
+	 * @return True if a child will remain overfull and further splitting is needed
 	 * false if no further splitting is needed
 	 */
-	public abstract boolean picksplit(HSPLeafNode<T,K> leaf, int level, ArrayList<ArrayList<K>> childrenKeys, ArrayList<T> childrenPredicates);
+	public abstract boolean picksplit(HSPLeafNode<T,K,R> leaf, int level, ArrayList<ArrayList<Pair<K,R>>> childrenData, ArrayList<T> childrenPredicates);
 	
 	/**
 	 * Trees with NEVER pathshrink and NodeShrink == true
@@ -78,16 +78,24 @@ public abstract class HSPIndex<T, K> {
 	 */
 	public abstract T determinePredicate(K key, T parentPred, int level);
 	
-	public HSPNode<T,K> insert(HSPNode<T,K> root, K key, int level){
-		HSPNode<T,K> curr = root;
+	/**
+	 * This method handles insertion of keys and records into an index
+	 * @param root The root of the index being constructed
+	 * @param key The key being inserted into the index
+	 * @param record The record attached to the key being inserted
+	 * @param level The depth the key is attempting to be inserted at
+	 * @return The root node of the current subtree
+	 */
+	public HSPNode<T,K,R> insert(HSPNode<T,K,R> root, K key, R record, int level){
+		HSPNode<T,K,R> curr = root;
 		if(path == PathShrink.NEVER){
 			for(; level < resolution; level++){
 				if(curr == null){
-					root = new HSPIndexNode<T, K>(null,this,level);
+					root = new HSPIndexNode<T, K,R>(null,this,level);
 					curr = root;
 				}
 				int index = -1;
-				HSPIndexNode<T,K> ind =((HSPIndexNode<T,K>)curr); 
+				HSPIndexNode<T,K,R> ind =((HSPIndexNode<T,K,R>)curr); 
 				for(int i=0; i < ind.children.size(); i++){
 					if(consistent(ind.children.get(i), key, level+1)){
 						index = i;
@@ -95,14 +103,14 @@ public abstract class HSPIndex<T, K> {
 					}
 				}
 				if(index == -1){
-					ind.children.add(new HSPIndexNode<T,K>(determinePredicate(key, ind.getPredicate(),level+1), ind));
+					ind.children.add(new HSPIndexNode<T,K,R>(determinePredicate(key, ind.getPredicate(),level+1), ind));
 					index = ind.children.size()-1;
 				}
 				else{
 					//we got the next node but we need to check if it is a leaf and convert it to an
 					//index node if it is :: This only happens if PathShrink == NEVER && nodeshrink == false
-					if(ind.children.get(index) instanceof HSPLeafNode<?,?>){
-						HSPIndexNode<T,K> replace = new HSPIndexNode<T,K>(ind.children.get(index).getPredicate(), ind, this, level+1);
+					if(ind.children.get(index) instanceof HSPLeafNode<?,?,?>){
+						HSPIndexNode<T,K,R> replace = new HSPIndexNode<T,K,R>(ind.children.get(index).getPredicate(), ind, this, level+1);
 						ind.children.set(index, replace);
 					}
 				}
@@ -111,13 +119,13 @@ public abstract class HSPIndex<T, K> {
 		}
 		if(curr == null){
 			//We have just started tree construction
-			root = new HSPLeafNode<T,K>(null);
+			root = new HSPLeafNode<T,K,R>(null);
 			curr = root;
 		}
-		if(curr instanceof HSPIndexNode<?,?>){
+		if(curr instanceof HSPIndexNode<?,?,?>){
 			//TODO: The implementation of tree shrink should be right here
 			//But I have the nariest a clue as to how to implement it
-			HSPIndexNode<T,K> ind =((HSPIndexNode<T,K>)curr);
+			HSPIndexNode<T,K,R> ind =((HSPIndexNode<T,K,R>)curr);
 			int index = -1;
 			for(int i = 0; i < ind.children.size(); i++){
 				if(consistent(ind.children.get(i), key, level)){
@@ -126,51 +134,56 @@ public abstract class HSPIndex<T, K> {
 				}
 			}
 			if(index == -1){
-				ind.children.add(new HSPLeafNode<T,K>(ind, determinePredicate(key, ind.getPredicate(),level+1)));
+				ind.children.add(new HSPLeafNode<T,K,R>(ind, determinePredicate(key, ind.getPredicate(),level+1)));
 				index = ind.children.size()-1;
 			}
-			insert(ind.children.get(index), key, level+1);
+			insert(ind.children.get(index), key, record, level+1);
 			return root;
 		}
 		//If we get here we are a leaf
-		HSPLeafNode<T,K> leaf =((HSPLeafNode<T,K>)curr);
+		HSPLeafNode<T,K,R> leaf =((HSPLeafNode<T,K,R>)curr);
+		HSPIndexNode<T,K,R> retVal = null;
 		if(leaf.keys.size() == blocksize){
-			
+			//Actually overfill the leaf and then split it 
+			leaf.keys.add(new Pair<K,R>(key,record));
 			boolean overfull;
 			while(true){
-				ArrayList<ArrayList<K>> keysets = new ArrayList<ArrayList<K>>();
+				ArrayList<ArrayList<Pair<K,R>>> keysets = new ArrayList<ArrayList<Pair<K,R>>>();
 				for(int i = 0; i < numSpaceParts; i++){
-					keysets.add(new ArrayList<K>());
+					keysets.add(new ArrayList<Pair<K,R>>());
 				}
 				ArrayList<T> preds = new ArrayList<T>();
-				HSPIndexNode<T,K> replace;
+				HSPIndexNode<T,K,R> replace;
 				overfull = picksplit(leaf, level, keysets, preds);
-				replace = new HSPIndexNode<T,K>(leaf.getPredicate(), leaf.getParent());
+				replace = new HSPIndexNode<T,K,R>(leaf.getPredicate(), leaf.getParent());
 				for(int i = 0; i < keysets.size(); i++){
 					if(keysets.get(i).size() != 0 || nodeShrink == false){
-						replace.children.add(new HSPLeafNode<T,K>(replace, keysets.get(i), preds.get(i)));
+						replace.children.add(new HSPLeafNode<T,K,R>(replace, keysets.get(i), preds.get(i)));
 					}
 				}
 				if(leaf.getParent()!=null){
-					int index = ((HSPIndexNode<T,K>) leaf.getParent()).children.indexOf(leaf);
+					int index = ((HSPIndexNode<T,K,R>) leaf.getParent()).children.indexOf(leaf);
 					//Replace the leaf version with the index version in its parent
-					((HSPIndexNode<T,K>) leaf.getParent()).children.set(index, replace);
+					((HSPIndexNode<T,K,R>) leaf.getParent()).children.set(index, replace);
 				}
 				level++;
+				if(retVal == null)
+					retVal = replace;
 				if(overfull){
 					//only one child can be overfull on a decomposition
 					for(int i = 0; i < replace.children.size();i++)
-						if(((HSPLeafNode<T,K>)replace.children.get(i)).keys.size() >= numSpaceParts){
-							leaf = ((HSPLeafNode<T,K>)replace.children.get(i));
+						if(((HSPLeafNode<T,K,R>)replace.children.get(i)).keys.size() > numSpaceParts){
+							leaf = ((HSPLeafNode<T,K,R>)replace.children.get(i));
 						}
 				}
 				else{
-					return replace;
+					
+					return retVal;
 				}
 			}
 		}
 		else{
-			leaf.keys.add(key);
+			leaf.keys.add(new Pair<K,R>(key,record));
 			return leaf;
 		}
 	}

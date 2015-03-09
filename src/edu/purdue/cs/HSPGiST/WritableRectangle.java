@@ -6,7 +6,11 @@ import java.io.IOException;
 
 import org.apache.hadoop.io.WritableComparable;
 
-
+/**
+ * Quick and dirty implementation of a writecomparable rectangle for debug usage
+ * @author Stefan Brinton
+ *
+ */
 public class WritableRectangle implements WritableComparable<WritableRectangle>{
 	private double x;		
 	private double y;
@@ -53,13 +57,10 @@ public class WritableRectangle implements WritableComparable<WritableRectangle>{
 		return w;
 	}
 	public int hashCode() {
-		//I don't really care about a high collision rate
+		//TODO: rewrite hashcode to be a proper hashcode
 		return (int) (x*y-h+w); 
 	}
 	public boolean contains(WritablePoint p){
-		if(x == Double.NEGATIVE_INFINITY || y == Double.NEGATIVE_INFINITY){
-			
-		}
 		return x < p.getX() && p.getX() < x+w && y < p.getY() && p.getY() < y+h;
 	}
 	public boolean equals(Object o){

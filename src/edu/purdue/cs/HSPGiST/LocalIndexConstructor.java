@@ -6,12 +6,9 @@ import java.util.ArrayList;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.conf.Configured;
 import org.apache.hadoop.fs.Path;
-import org.apache.hadoop.io.LongWritable;
-import org.apache.hadoop.io.Text;
 import org.apache.hadoop.mapreduce.Job;
 import org.apache.hadoop.mapreduce.Mapper;
 import org.apache.hadoop.mapreduce.Reducer;
-import org.apache.hadoop.mapreduce.Reducer.Context;
 import org.apache.hadoop.mapreduce.lib.input.FileInputFormat;
 import org.apache.hadoop.mapreduce.lib.input.TextInputFormat;
 import org.apache.hadoop.mapreduce.lib.output.FileOutputFormat;
@@ -53,7 +50,7 @@ public class LocalIndexConstructor<MKIn, MVIn, MKOut, MVOut, Pred> extends Confi
 		job.setMapperClass(LocalMapper.class);
 		job.setReducerClass(LocalReducer.class);
 		//TODO:Change this after demo
-		job.setNumReduceTasks(1);
+		job.setNumReduceTasks(4);
 		boolean succ = job.waitForCompletion(true);
 		return succ ? 0: 1;
 	}
@@ -79,32 +76,38 @@ public class LocalIndexConstructor<MKIn, MVIn, MKOut, MVOut, Pred> extends Confi
 		}
 	}
 	private static class LocalReducer<MKOut, MVOut, RKOut, RVOut, Pred> extends Reducer<MKOut, MVOut, RKOut, RVOut>{
-		HSPNode<Pred,MKOut> root = null;
-		HSPIndex<Pred,MKOut> local;
+		HSPNode<Pred,MKOut,MVOut> root = null;
+		HSPIndex<Pred,MKOut,MVOut> local;
+		@SuppressWarnings("unchecked")
 		public void setup(Context context){
 			local = index;
 		}
 		@SuppressWarnings("unchecked")
 		public void reduce(MKOut key, Iterable<MVOut> values, Context context) throws IOException, InterruptedException {
-			//Vals are ultimately meaningless, took me until just now to pretty much realize that fact
-			root = local.insert(root, (MKOut) ((WritablePoint)key).clone(), 1);
+			//Unsure if keys can have more than one value, if they do this becomes more complicated
+			
+			MVOut val = null;
+			for(MVOut value : values){
+				val = value;
+			}
+			root = local.insert(root, ((Copyable<MKOut>)key).copy(), ((Copyable<MVOut>)val).copy(),1);
 		}
 		@SuppressWarnings("unchecked")
 		public void cleanup(Context context) throws IOException, InterruptedException{
-			ArrayList<HSPNode<Pred,MKOut>> stack = new ArrayList<HSPNode<Pred,MKOut>>();
-			HSPNode<Pred,MKOut> node = root;
+			ArrayList<HSPNode<Pred,MKOut,MVOut>> stack = new ArrayList<HSPNode<Pred,MKOut,MVOut>>();
+			HSPNode<Pred,MKOut,MVOut> node = root;
 			while(!(stack.size() == 0 && node == null)){
 				if(node != null){
-					if(node instanceof HSPIndexNode<?,?>){
-						HSPIndexNode<Pred,MKOut> temp = (HSPIndexNode<Pred,MKOut>)node;
-						context.write((RKOut)node,  (RVOut) new HSPLeafNode<Pred,MKOut>(null));
+					if(node instanceof HSPIndexNode<?,?,?>){
+						HSPIndexNode<Pred,MKOut,MVOut> temp = (HSPIndexNode<Pred,MKOut,MVOut>)node;
+						context.write((RKOut)node,  (RVOut) new HSPLeafNode<Pred,MKOut,MVOut>(null));
 						for(int i = 1;i < temp.children.size();i++){
 							stack.add(temp.children.get(i));
 						}
 						node = temp.children.get(0);
 					}
 					else{
-						context.write((RKOut)new HSPIndexNode<Pred,MKOut>((ArrayList<HSPNode<Pred,MKOut>>)null, null),  (RVOut) node);
+						context.write((RKOut)new HSPIndexNode<Pred,MKOut,MVOut>((ArrayList<HSPNode<Pred,MKOut,MVOut>>)null, null),  (RVOut) node);
 						node = null;
 					}
 				}

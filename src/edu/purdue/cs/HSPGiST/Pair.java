@@ -3,7 +3,8 @@ package edu.purdue.cs.HSPGiST;
 /**
  * Java is silly and doesn't include a native pair class
  * So we need to have one for our parser so it can emit values to the mapper
- *
+ * This code was written by a forum user with no source information
+ * Irregular behavior is possible
  */
 public class Pair<A, B> {
     private A first;
