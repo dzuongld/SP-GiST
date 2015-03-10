@@ -75,7 +75,7 @@ public class WritableRectangle implements WritableComparable<WritableRectangle>{
 		return (x1<x2 ? -1 : (x1==x2 ? 0 : 1));
 	}
 	public String toString() {
-		return "X: " + Double.toString(x) + " Y: " + Double.toString(y) + " H: " + Double.toString(h)+ " W: " + Double.toString(w) +"\n";
+		return "X: " + Double.toString(x) + " Y: " + Double.toString(y) + " H: " + Double.toString(h)+ " W: " + Double.toString(w);
 	}
 }
 

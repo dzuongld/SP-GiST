@@ -90,7 +90,7 @@ public class HSPIndexNode<T,K, R>  extends HSPNode<T,K,R> implements WritableCom
 			return "Root Node";
 		}
 		
-		return "Predicate: " + getPredicate().toString() +"\n";
+		return "Predicate: " + getPredicate().toString();
 	}
 
 	@Override

@@ -101,10 +101,10 @@ public class LocalIndexConstructor<MKIn, MVIn, MKOut, MVOut, Pred> extends Confi
 					if(node instanceof HSPIndexNode<?,?,?>){
 						HSPIndexNode<Pred,MKOut,MVOut> temp = (HSPIndexNode<Pred,MKOut,MVOut>)node;
 						context.write((RKOut)node,  (RVOut) new HSPLeafNode<Pred,MKOut,MVOut>(null));
-						for(int i = 1;i < temp.children.size();i++){
+						for(int i = 0;i < temp.children.size();i++){
 							stack.add(temp.children.get(i));
 						}
-						node = temp.children.get(0);
+						node = stack.remove(0);
 					}
 					else{
 						context.write((RKOut)new HSPIndexNode<Pred,MKOut,MVOut>((ArrayList<HSPNode<Pred,MKOut,MVOut>>)null, null),  (RVOut) node);
@@ -112,7 +112,7 @@ public class LocalIndexConstructor<MKIn, MVIn, MKOut, MVOut, Pred> extends Confi
 					}
 				}
 				else
-					node = stack.remove(stack.size()-1);
+					node = stack.remove(0);
 			}
 		}
 	}

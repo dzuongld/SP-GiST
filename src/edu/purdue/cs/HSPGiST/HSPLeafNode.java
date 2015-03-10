@@ -38,7 +38,7 @@ public class HSPLeafNode<T,K,R> extends HSPNode<T,K,R> implements WritableCompar
 			return "";
 		StringBuilder stren = new StringBuilder("Keys:");
 		for(Pair<K,R> key : keys)
-			stren.append(key.toString() + "\n");
+			stren.append(key.toString());
 		return stren.toString();
 	}
 	@Override
