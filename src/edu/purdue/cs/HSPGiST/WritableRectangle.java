@@ -3,6 +3,7 @@ package edu.purdue.cs.HSPGiST;
 import java.io.DataInput;
 import java.io.DataOutput;
 import java.io.IOException;
+import java.util.ArrayList;
 
 import org.apache.hadoop.io.WritableComparable;
 
@@ -62,6 +63,13 @@ public class WritableRectangle implements WritableComparable<WritableRectangle>{
 	}
 	public boolean contains(WritablePoint p){
 		return x < p.getX() && p.getX() < x+w && y < p.getY() && p.getY() < y+h;
+	}
+	public int containsNumber(ArrayList<WritablePoint> list){
+		int count = 0;
+		for(WritablePoint p : list)
+			if(contains(p))
+				count++;
+		return count;
 	}
 	public boolean equals(Object o){
 		if(!(o instanceof WritableRectangle))

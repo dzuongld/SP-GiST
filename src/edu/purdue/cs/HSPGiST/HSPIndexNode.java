@@ -86,10 +86,12 @@ public class HSPIndexNode<T,K, R>  extends HSPNode<T,K,R> implements WritableCom
 	public String toString() {
 		if(children == null)
 			return "";
-		if(getParent() == null){
+		if(getParent() == null && getPredicate() == null){
 			return "Root Node";
 		}
-		
+		else if(getParent() == null){
+			return "Root Node Predicate: " + getPredicate().toString();
+		}
 		return "Predicate: " + getPredicate().toString();
 	}
 
@@ -99,9 +101,13 @@ public class HSPIndexNode<T,K, R>  extends HSPNode<T,K,R> implements WritableCom
 		
 	}
 
+	@SuppressWarnings("unchecked")
 	@Override
 	public void write(DataOutput arg0) throws IOException {
-		// TODO Auto-generated method stub
-		
+		//The boolean acts as a sentinel to indicate 
+		//That this node is not a leaf/data node
+		arg0.writeBoolean(false);
+		arg0.write(children.size());
+		((WritableComparable<T>)getPredicate()).write(arg0);
 	}
 }

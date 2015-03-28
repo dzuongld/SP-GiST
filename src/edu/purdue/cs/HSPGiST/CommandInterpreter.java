@@ -22,18 +22,22 @@ public class CommandInterpreter {
 			HSPIndex index;
 			Parser parse;
 			LocalIndexConstructor construct = null;
+			RandomSample sampler = null;
 			//This switch statement determines the parser
 			//Add cases for your parsers to add them
 			switch(args[2]){
 			case "OSM":
 				index = makeIndex(args[1], new LongWritable());
 				parse = new OSMParser();
+				sampler = new RandomSample<Object, Text, WritablePoint, Text>(parse, index);
 				construct = new LocalIndexConstructor<Object,Text,WritablePoint,Text,WritableRectangle>(parse, index);
 			}
 			if(construct == null){
 				System.err.println("Failed to provide a valid parser on build instruction");
 				System.exit(-1);
 			}
+			ToolRunner.run(sampler, args);
+			
 			System.exit(ToolRunner.run(construct, args));
 		}
 	}

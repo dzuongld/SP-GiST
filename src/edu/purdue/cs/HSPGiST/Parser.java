@@ -39,6 +39,7 @@ public abstract class Parser<KeyIn,ValueIn,KeyOut,ValueOut> {
 	 */
 	public abstract ArrayList<Pair<KeyOut,ValueOut>> arrayParse(KeyIn key, ValueIn value);
 	
+
 	/**
 	 * Need to be able to make a copy for each mapper
 	 */
