@@ -1,4 +1,4 @@
-package edu.purdue.cs.HSPGiST;
+package edu.purdue.cs.HSPGiST.SupportClasses;
 
 import org.apache.hadoop.io.LongWritable;
 
@@ -8,13 +8,13 @@ import org.apache.hadoop.io.LongWritable;
  *
  */
 public class CopyWritableLong extends LongWritable implements Copyable<CopyWritableLong>{
-	CopyWritableLong(){
+	public CopyWritableLong(){
 		super();
 	}
-	CopyWritableLong(LongWritable l){
+	public CopyWritableLong(LongWritable l){
 		super(l.get());
 	}
-	CopyWritableLong(long l){
+	public CopyWritableLong(long l){
 		super(l);
 	}
 	@Override

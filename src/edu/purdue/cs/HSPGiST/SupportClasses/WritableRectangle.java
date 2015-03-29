@@ -1,8 +1,9 @@
-package edu.purdue.cs.HSPGiST;
+package edu.purdue.cs.HSPGiST.SupportClasses;
 
 import java.io.DataInput;
 import java.io.DataOutput;
 import java.io.IOException;
+import java.util.ArrayList;
 
 import org.apache.hadoop.io.WritableComparable;
 
@@ -11,7 +12,7 @@ import org.apache.hadoop.io.WritableComparable;
  * @author Stefan Brinton
  *
  */
-public class WritableRectangle implements WritableComparable<WritableRectangle>{
+public class WritableRectangle implements WritableComparable<WritableRectangle>, Copyable<WritableRectangle>{
 	private double x;		
 	private double y;
 	private double h;
@@ -61,7 +62,16 @@ public class WritableRectangle implements WritableComparable<WritableRectangle>{
 		return (int) (x*y-h+w); 
 	}
 	public boolean contains(WritablePoint p){
+		if(p == null)
+			return false;
 		return x < p.getX() && p.getX() < x+w && y < p.getY() && p.getY() < y+h;
+	}
+	public int containsNumber(ArrayList<WritablePoint> list){
+		int count = 0;
+		for(WritablePoint p : list)
+			if(contains(p))
+				count++;
+		return count;
 	}
 	public boolean equals(Object o){
 		if(!(o instanceof WritableRectangle))
@@ -76,6 +86,11 @@ public class WritableRectangle implements WritableComparable<WritableRectangle>{
 	}
 	public String toString() {
 		return "X: " + Double.toString(x) + " Y: " + Double.toString(y) + " H: " + Double.toString(h)+ " W: " + Double.toString(w);
+	}
+
+	@Override
+	public WritableRectangle copy() {
+		return new WritableRectangle(x,y,h,w);
 	}
 }
 

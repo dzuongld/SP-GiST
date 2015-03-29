@@ -21,6 +21,7 @@ import org.apache.hadoop.mapreduce.lib.output.TextOutputFormat;
 import org.apache.hadoop.util.Tool;
 import org.apache.hadoop.util.ToolRunner;
 
+
 public class OSMGrid extends Configured implements Tool {
 	public static class OSMMapper extends Mapper<Object, Text, WritablePoint, LongWritable> {
 		private WritablePoint node = new WritablePoint(0,0);
@@ -39,6 +40,7 @@ public class OSMGrid extends Configured implements Tool {
 			minlon = conf.getDouble(MINLON, 0);
 			maxlat = conf.getDouble(MAXLAT, 0);
 			maxlon = conf.getDouble(MAXLON, 0);
+			
 		}
 		public void map(Object key, Text value, Context context) throws IOException, InterruptedException {
 			int start = 0;

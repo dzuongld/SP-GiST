@@ -1,6 +1,8 @@
-package edu.purdue.cs.HSPGiST;
+package edu.purdue.cs.HSPGiST.AbstractClasses;
 
 import java.util.ArrayList;
+
+import edu.purdue.cs.HSPGiST.SupportClasses.Pair;
 
 /**
  * Provides an abstract class to be the superclass
@@ -39,6 +41,7 @@ public abstract class Parser<KeyIn,ValueIn,KeyOut,ValueOut> {
 	 */
 	public abstract ArrayList<Pair<KeyOut,ValueOut>> arrayParse(KeyIn key, ValueIn value);
 	
+
 	/**
 	 * Need to be able to make a copy for each mapper
 	 */

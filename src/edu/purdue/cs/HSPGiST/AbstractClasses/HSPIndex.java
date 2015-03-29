@@ -1,6 +1,10 @@
-package edu.purdue.cs.HSPGiST;
+package edu.purdue.cs.HSPGiST.AbstractClasses;
 
 import java.util.ArrayList;
+
+import edu.purdue.cs.HSPGiST.SupportClasses.HSPIndexNode;
+import edu.purdue.cs.HSPGiST.SupportClasses.HSPLeafNode;
+import edu.purdue.cs.HSPGiST.SupportClasses.Pair;
 /**
  * All indexes made with HSP-GiST will implement this
  * class and its methods. 
@@ -13,7 +17,7 @@ import java.util.ArrayList;
  */
 public abstract class HSPIndex<T, K, R> {
 	public int numSpaceParts;
-	//This is a dummy value for now
+	//TODO: figure out a reasonable value for this
 	public static final int blocksize = 10;
 	
 	/**
@@ -21,6 +25,8 @@ public abstract class HSPIndex<T, K, R> {
 	 */
 	public int resolution;
 	
+	public ArrayList<Pair<T,Integer>> partitionPreds = null;
+	public ArrayList<K> samples = null;
 	/**
 	 * PathShrink Enum
 	 * NEVER - A tree will insert a value at the greatest depth possible
@@ -48,6 +54,15 @@ public abstract class HSPIndex<T, K, R> {
 	public abstract boolean consistent(HSPNode<T,K,R> e, K q, int level);
 	
 	/**
+	 * Check if the given key is consistent with a given predicate 
+	 * (the value belongs to that node or its children)
+	 * @param e The predicate to check for consistency with
+	 * @param q The key to check for consistency
+	 * @param level The depth within the tree (root is considered depth 1)
+	 * @return True if the key is consistent with the node's predicate
+	 */
+	public abstract boolean consistent(T e, K q, int level);
+	/**
 	 * Governs splitting of an overfull leaf into numSpaceParts leaves
 	 * also governs nodeshrink == false && pathshrink == NEVER trees creation of index nodes
 	 * with correct predicates (if you have a tree with those values you will never split
@@ -67,7 +82,37 @@ public abstract class HSPIndex<T, K, R> {
 	public abstract boolean picksplit(HSPLeafNode<T,K,R> leaf, int level, ArrayList<ArrayList<Pair<K,R>>> childrenData, ArrayList<T> childrenPredicates);
 	
 	/**
-	 * Trees with NEVER pathshrink and NodeShrink == true
+	 * This method should use the ArrayList<K> samples and should set the ArrayList<Pair<T,Integer>> partitionPreds
+	 * Use samples to approximate how to divide input data to balance load across reducers
+	 * When this method completes partitionPreds should contain numOfReducers (read as a number, e.g. 32) mutually exclusive predicates 
+	 * (no predicate is a part of another predicate's subtree) with the depth in the tree each predicate is at
+	 * In short, find mutually exclusive predicates such that an equal number of samples are in each predicate
+	 * <br>
+	 * Note: The predicates should cover the spatial domain, e.g. four rectangles that represent the quadrants of a 2D Cartesian plot   
+	 * @param numOfReducers the number of Predicate , depth pairs needed
+	 */
+	public abstract void setupPartitions(int numOfReducers);
+	
+	/**
+	 * Partitions keys into separate reducers
+	 * @param key The key being partitioned
+	 * @param record The keys associated record
+	 * @param numOfReducers The number of reducers
+	 * @return The partition the key has been placed in
+	 */
+	public int partition(K key, R record, int numOfReducers){
+		for(int i = 0; i < numOfReducers;i++){
+			if(consistent(partitionPreds.get(i).getFirst(), key, partitionPreds.get(i).getSecond()))
+				return i;
+		}
+		/*
+		 * This should never happen
+		 */
+		return 0;
+	}
+	
+	/**
+	 * Trees with NodeShrink == true									
 	 * Require an additional method to provide nodes with
 	 * a predicate when they are made. All other trees can implement a
 	 * trivial variant (return null)
