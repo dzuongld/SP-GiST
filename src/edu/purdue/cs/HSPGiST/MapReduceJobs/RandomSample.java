@@ -1,4 +1,4 @@
-package edu.purdue.cs.HSPGiST;
+package edu.purdue.cs.HSPGiST.MapReduceJobs;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -13,6 +13,11 @@ import org.apache.hadoop.mapreduce.lib.input.FileInputFormat;
 import org.apache.hadoop.mapreduce.lib.input.TextInputFormat;
 import org.apache.hadoop.mapreduce.lib.output.FileOutputFormat;
 import org.apache.hadoop.mapreduce.lib.output.TextOutputFormat;
+
+import edu.purdue.cs.HSPGiST.AbstractClasses.HSPIndex;
+import edu.purdue.cs.HSPGiST.AbstractClasses.Parser;
+import edu.purdue.cs.HSPGiST.SupportClasses.Copyable;
+import edu.purdue.cs.HSPGiST.SupportClasses.Pair;
 
 public class RandomSample<MKIn, MVIn, MKOut, MVOut> extends Configured implements Tool {
 	@SuppressWarnings("rawtypes")
@@ -39,7 +44,7 @@ public class RandomSample<MKIn, MVIn, MKOut, MVOut> extends Configured implement
 				Pair<MKOut, MVOut> pair = null;
 				for (int i = 0; i < list.size(); i++) {
 					pair = list.get(i);
-					if(rand.nextDouble()<0.1)
+					if(rand.nextDouble()<0.5)
 						index.samples.add(((Copyable) pair.getFirst()).copy());
 				}
 			} else {

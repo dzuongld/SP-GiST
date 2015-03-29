@@ -1,4 +1,4 @@
-package edu.purdue.cs.HSPGiST;
+package edu.purdue.cs.HSPGiST.SupportClasses;
 
 import java.io.DataInput;
 import java.io.DataOutput;
@@ -6,6 +6,9 @@ import java.io.IOException;
 import java.util.ArrayList;
 
 import org.apache.hadoop.io.WritableComparable;
+
+import edu.purdue.cs.HSPGiST.AbstractClasses.HSPIndex;
+import edu.purdue.cs.HSPGiST.AbstractClasses.HSPNode;
 
 /**
  * Representation of index nodes for HSP-GiST indices
@@ -19,7 +22,7 @@ import org.apache.hadoop.io.WritableComparable;
  * @param <K> Key type
  * @param <R> Record type
  */
-public class HSPIndexNode<T,K, R>  extends HSPNode<T,K,R> implements WritableComparable<HSPIndexNode<T,K,R>>{
+public class HSPIndexNode<T,K,R>  extends HSPNode<T,K,R> implements WritableComparable<HSPIndexNode<T,K,R>>{
 	public ArrayList<HSPNode<T,K,R>> children;
 	//Hadoop needs this default constructor to run correctly
 	public HSPIndexNode(){
@@ -36,7 +39,14 @@ public class HSPIndexNode<T,K, R>  extends HSPNode<T,K,R> implements WritableCom
 		setParent(parent);
 	}
 	
-	
+	public HSPIndexNode(T predicate,HSPNode<T,K,R> parent, ArrayList<HSPNode<T,K,R>> children){
+		this.children = new ArrayList<HSPNode<T,K,R>>();
+		for(HSPNode<T,K,R> child : children){
+			this.children.add(((Copyable<HSPNode<T,K,R>>)child).copy());
+		}
+		setPredicate(predicate);
+		setParent(parent);
+	}
 	
 	public HSPIndexNode(HSPNode<T,K,R> parent, HSPIndex<T,K,R> index, int level){
 		children = new ArrayList<HSPNode<T,K,R>>();
@@ -81,10 +91,11 @@ public class HSPIndexNode<T,K, R>  extends HSPNode<T,K,R> implements WritableCom
 	}
 	
 	public int compareTo(HSPIndexNode<T,K,R> o){
+		//TODO: implement more robust comparator
 		return this.children.toString().compareTo(o.children.toString());
 	}
 	public String toString() {
-		if(children == null)
+		if(children == null || children.size()==0)
 			return "";
 		if(getParent() == null && getPredicate() == null){
 			return "Root Node";
@@ -95,19 +106,41 @@ public class HSPIndexNode<T,K, R>  extends HSPNode<T,K,R> implements WritableCom
 		return "Predicate: " + getPredicate().toString();
 	}
 
+	@SuppressWarnings("unchecked")
 	@Override
 	public void readFields(DataInput arg0) throws IOException {
-		// TODO Auto-generated method stub
-		
+		int size = arg0.readInt();
+		for(int i = 0; i < size; i++){
+			//populate node with dummy children to get right size
+			children.add(new HSPIndexNode<T, K, R>( (T) null, this));
+		}
+		String temp = arg0.readUTF();
+		try {
+			Class<T> clazz = (Class<T>) Class.forName(temp);
+			T obj = clazz.newInstance();
+			((WritableComparable<T>)obj).readFields(arg0);
+			setPredicate(obj);
+		} catch (ClassNotFoundException | InstantiationException | IllegalAccessException e) {
+			setPredicate(null);
+		}
 	}
 
 	@SuppressWarnings("unchecked")
 	@Override
 	public void write(DataOutput arg0) throws IOException {
-		//The boolean acts as a sentinel to indicate 
-		//That this node is not a leaf/data node
-		arg0.writeBoolean(false);
-		arg0.write(children.size());
-		((WritableComparable<T>)getPredicate()).write(arg0);
+		if(children != null)
+			arg0.writeInt(children.size());
+		else
+			arg0.writeInt(0);
+		if(getPredicate() == null)
+			arg0.writeUTF("empty");
+		else{
+			arg0.writeUTF(getPredicate().getClass().getName());
+			((WritableComparable<T>)getPredicate()).write(arg0);
+		}
+	}
+	@Override
+	public HSPNode<T, K, R> copy() {
+		return new HSPIndexNode<T,K,R>(getPredicate(), getParent(), children);
 	}
 }

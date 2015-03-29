@@ -1,4 +1,4 @@
-package edu.purdue.cs.HSPGiST;
+package edu.purdue.cs.HSPGiST.SupportClasses;
 /**
  * This is an interface similar to the Cloneable interface
  * Cloneable does not ensure the presence of the .clone() method

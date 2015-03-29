@@ -1,8 +1,13 @@
-package edu.purdue.cs.HSPGiST;
+package edu.purdue.cs.HSPGiST.UserDefinedSection;
 
 import java.util.ArrayList;
 
 import org.apache.hadoop.io.Text;
+
+import edu.purdue.cs.HSPGiST.AbstractClasses.Parser;
+import edu.purdue.cs.HSPGiST.SupportClasses.CopyWritableLong;
+import edu.purdue.cs.HSPGiST.SupportClasses.Pair;
+import edu.purdue.cs.HSPGiST.SupportClasses.WritablePoint;
 
 /**
  * Quick and dirty parser for OSM data

@@ -1,6 +1,10 @@
-package edu.purdue.cs.HSPGiST;
+package edu.purdue.cs.HSPGiST.AbstractClasses;
 
 import java.util.ArrayList;
+
+import edu.purdue.cs.HSPGiST.SupportClasses.HSPIndexNode;
+import edu.purdue.cs.HSPGiST.SupportClasses.HSPLeafNode;
+import edu.purdue.cs.HSPGiST.SupportClasses.Pair;
 /**
  * All indexes made with HSP-GiST will implement this
  * class and its methods. 

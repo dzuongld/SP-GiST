@@ -1,4 +1,7 @@
-package edu.purdue.cs.HSPGiST;
+package edu.purdue.cs.HSPGiST.AbstractClasses;
+
+import edu.purdue.cs.HSPGiST.SupportClasses.Copyable;
+
 /**
  * Gives nodes a shared class superclass for ease of use
  * @author Stefan Brinton
@@ -7,7 +10,7 @@ package edu.purdue.cs.HSPGiST;
  * @param <K> Node key type
  * @param <R> Node record type
  */
-public abstract class HSPNode<T,K,R>{
+public abstract class HSPNode<T,K,R> implements Copyable<HSPNode<T,K,R>>{
 	private HSPNode<T,K,R> parent;
 	private T predicate;
 	/**

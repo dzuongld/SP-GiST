@@ -1,6 +1,13 @@
-package edu.purdue.cs.HSPGiST;
+package edu.purdue.cs.HSPGiST.UserDefinedSection;
 
 import java.util.ArrayList;
+
+import edu.purdue.cs.HSPGiST.AbstractClasses.HSPIndex;
+import edu.purdue.cs.HSPGiST.AbstractClasses.HSPNode;
+import edu.purdue.cs.HSPGiST.SupportClasses.HSPLeafNode;
+import edu.purdue.cs.HSPGiST.SupportClasses.Pair;
+import edu.purdue.cs.HSPGiST.SupportClasses.WritablePoint;
+import edu.purdue.cs.HSPGiST.SupportClasses.WritableRectangle;
 
 /**
  * Basic implementation of a PR quadtree
@@ -156,7 +163,6 @@ public class QuadTree<R> extends HSPIndex<WritableRectangle,WritablePoint,R>{
 			keys.add(new ArrayList<WritablePoint>());
 		}
 		for(int i = 0; i < samples.size();i++){
-			System.out.println(samples.get(i).toString());
 			for(int j = 0; j < preds.size();j++)
 				if(preds.get(j).contains(samples.get(i))){
 					keys.get(j).add(samples.get(i));
@@ -166,7 +172,6 @@ public class QuadTree<R> extends HSPIndex<WritableRectangle,WritablePoint,R>{
 			int most = -1;
 			int j = 0;
 			for(int i = 0; i < keys.size(); i++){
-				System.out.println("PartitionNUM: " + i + " PartitionCurrentSize: " + keys.get(i).size());
 				if(keys.get(i).size() > most){
 					most = keys.get(i).size();
 					j = i;

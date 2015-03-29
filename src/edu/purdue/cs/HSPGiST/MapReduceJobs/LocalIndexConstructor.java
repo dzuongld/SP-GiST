@@ -1,4 +1,4 @@
-package edu.purdue.cs.HSPGiST;
+package edu.purdue.cs.HSPGiST.MapReduceJobs;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -14,8 +14,18 @@ import org.apache.hadoop.mapreduce.Reducer;
 import org.apache.hadoop.mapreduce.lib.input.FileInputFormat;
 import org.apache.hadoop.mapreduce.lib.input.TextInputFormat;
 import org.apache.hadoop.mapreduce.lib.output.FileOutputFormat;
-import org.apache.hadoop.mapreduce.lib.output.TextOutputFormat;
+import org.apache.hadoop.mapreduce.lib.output.SequenceFileOutputFormat;
+//import org.apache.hadoop.mapreduce.lib.output.TextOutputFormat;
 import org.apache.hadoop.util.Tool;
+
+import edu.purdue.cs.HSPGiST.AbstractClasses.HSPIndex;
+import edu.purdue.cs.HSPGiST.AbstractClasses.HSPNode;
+import edu.purdue.cs.HSPGiST.AbstractClasses.Parser;
+import edu.purdue.cs.HSPGiST.SupportClasses.Copyable;
+import edu.purdue.cs.HSPGiST.SupportClasses.HSPIndexNode;
+import edu.purdue.cs.HSPGiST.SupportClasses.HSPLeafNode;
+import edu.purdue.cs.HSPGiST.SupportClasses.Pair;
+import edu.purdue.cs.HSPGiST.UserDefinedSection.CommandInterpreter;
 
 
 /**
@@ -47,18 +57,19 @@ public class LocalIndexConstructor<MKIn, MVIn, MKOut, MVOut, Pred> extends Confi
 		job.setOutputKeyClass(HSPIndexNode.class);
 		job.setOutputValueClass(HSPLeafNode.class);
 		job.setInputFormatClass(TextInputFormat.class);
-		job.setOutputFormatClass(TextOutputFormat.class);
+		job.setOutputFormatClass(SequenceFileOutputFormat.class);
 		FileInputFormat.addInputPath(job, new Path(args[3]));
-		FileOutputFormat.setOutputPath(job, new Path("FirstOutput"));
+		FileOutputFormat.setOutputPath(job, new Path(CommandInterpreter.CONSTRUCTFIRSTOUT));
 		job.setMapperClass(LocalMapper.class);
 		job.setReducerClass(LocalReducer.class);
 		job.setPartitionerClass(LocalPartitioner.class);
-		//TODO:Change this after demo
-		job.setNumReduceTasks(16);
+		//TODO:Develop a means of defining this on the fly 
+		//NOTE:Any definition for this should be 1 + (NumOfSpacePartitions -1)*n where n is any arbitrary Natural number
+		job.setNumReduceTasks(4);
 		boolean succ = job.waitForCompletion(true);
 		if(!succ){
 			FileSystem fs = FileSystem.get(getConf());
-			fs.delete(new Path("temp"), true);
+			fs.delete(new Path(CommandInterpreter.CONSTRUCTFIRSTOUT), true);
 		}
 		return succ ? 0: 1;
 	}
@@ -104,7 +115,7 @@ public class LocalIndexConstructor<MKIn, MVIn, MKOut, MVOut, Pred> extends Confi
 		public void setup(Context context){
 			//Get each reducer a reference to the index, setup an empty leaf root, and set the depth of the root
 			local = index;
-			int part = context.getConfiguration().getInt("mapred.task.partition", 0);
+			int part = context.getConfiguration().getInt("mapreduce.task.partition", 0);
 			root = new HSPLeafNode<Pred, MKOut, MVOut>(null, local.partitionPreds.get(part).getFirst());
 			depth = local.partitionPreds.get(part).getSecond();
 		}
