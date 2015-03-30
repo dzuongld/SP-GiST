@@ -59,17 +59,17 @@ public class LocalIndexConstructor<MKIn, MVIn, MKOut, MVOut, Pred> extends Confi
 		job.setInputFormatClass(TextInputFormat.class);
 		job.setOutputFormatClass(SequenceFileOutputFormat.class);
 		FileInputFormat.addInputPath(job, new Path(args[3]));
-		FileOutputFormat.setOutputPath(job, new Path(CommandInterpreter.CONSTRUCTFIRSTOUT));
+		FileOutputFormat.setOutputPath(job, new Path(CommandInterpreter.CONSTRUCTFIRSTOUT + "-" + parser.getClass().getSimpleName() + "-" + index.getClass().getSimpleName() + "-" + args[3]));
 		job.setMapperClass(LocalMapper.class);
 		job.setReducerClass(LocalReducer.class);
 		job.setPartitionerClass(LocalPartitioner.class);
 		//TODO:Develop a means of defining this on the fly 
 		//NOTE:Any definition for this should be 1 + (NumOfSpacePartitions -1)*n where n is any arbitrary Natural number
-		job.setNumReduceTasks(4);
+		job.setNumReduceTasks(19);
 		boolean succ = job.waitForCompletion(true);
 		if(!succ){
 			FileSystem fs = FileSystem.get(getConf());
-			fs.delete(new Path(CommandInterpreter.CONSTRUCTFIRSTOUT), true);
+			fs.delete(new Path(CommandInterpreter.CONSTRUCTFIRSTOUT + "-" + parser.getClass().getSimpleName() + "-" + index.getClass().getSimpleName() + "-" + args[3]), true);
 		}
 		return succ ? 0: 1;
 	}

@@ -68,6 +68,33 @@ public class HSPIndexNode<T,K,R>  extends HSPNode<T,K,R> implements WritableComp
 			}
 		}
 	}
+	/**
+	 * Used only in GlobalReducer, don't use it anywhere else
+	 */
+	@SuppressWarnings("unchecked")
+	public HSPIndexNode(HSPIndex index, int level, T predicate, HSPNode<T,K,R> parent, int depth){
+		children = new ArrayList<HSPNode<T,K,R>>();
+		setParent(parent);
+		setPredicate(predicate);
+		ArrayList<HSPNode<T,K,R>> stack = new ArrayList<HSPNode<T,K,R>>();
+		ArrayList<ArrayList<Pair<K, R>>> junk = new ArrayList<ArrayList<Pair<K, R>>>();
+		for(int i = 0; i < index.numSpaceParts; i++){
+			junk.add(new ArrayList<Pair<K, R>>());
+		}
+		ArrayList<T> preds = new ArrayList<T>();
+		index.picksplit(new HSPLeafNode<T,K,R>(this, getPredicate()), depth, junk, preds);
+		if(depth == level){
+			for(int i = 0; i < index.numSpaceParts; i++){
+				children.add(new HSPLeafNode<T,K,R>(this, preds.get(i)));
+			}
+		}
+		else{
+			for(int i = 0; i < index.numSpaceParts; i++){
+				children.add(new HSPIndexNode<T,K,R>(index, level, preds.get(i), this, depth+1));
+			}
+		}
+		
+	}
 	public HSPIndexNode(T predicate, HSPNode<T,K,R> parent, HSPIndex<T,K,R> index, int level){
 		children = new ArrayList<HSPNode<T,K,R>>();
 		setParent(parent);

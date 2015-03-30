@@ -7,6 +7,7 @@ import org.apache.hadoop.util.ToolRunner;
 import edu.purdue.cs.HSPGiST.AbstractClasses.HSPIndex;
 import edu.purdue.cs.HSPGiST.AbstractClasses.Parser;
 import edu.purdue.cs.HSPGiST.MapReduceJobs.BinaryReaderTest;
+import edu.purdue.cs.HSPGiST.MapReduceJobs.GlobalIndexConstructor;
 import edu.purdue.cs.HSPGiST.MapReduceJobs.LocalIndexConstructor;
 import edu.purdue.cs.HSPGiST.MapReduceJobs.RandomSample;
 import edu.purdue.cs.HSPGiST.SupportClasses.CopyWritableLong;
@@ -22,7 +23,14 @@ import edu.purdue.cs.HSPGiST.SupportClasses.WritableRectangle;
  *
  */
 public class CommandInterpreter {
-	public static final String CONSTRUCTFIRSTOUT = "FirstOutput";
+	/**
+	 * The prefix for the output directory for LocalIndexConstuctor
+	 */
+	public static final String CONSTRUCTFIRSTOUT = "Local";
+	/**
+	 * The prefix for the output directory for GlobalIndexConstructor
+	 */
+	public static final String CONSTRUCTSECONDOUT = "Global";
 	@SuppressWarnings({ "rawtypes" })
 	public static void main(String args[]) throws Exception{
 		//Determines the operation to run
@@ -32,6 +40,7 @@ public class CommandInterpreter {
 			HSPIndex index;
 			Parser parse;
 			LocalIndexConstructor construct = null;
+			GlobalIndexConstructor finish = null;
 			RandomSample sampler = null;
 			//This switch statement determines the parser
 			//Add cases for your parsers to add them
@@ -41,14 +50,22 @@ public class CommandInterpreter {
 				parse = new OSMParser();
 				sampler = new RandomSample<Object, Text, WritablePoint, Text>(parse, index);
 				construct = new LocalIndexConstructor<Object,Text,WritablePoint,CopyWritableLong,WritableRectangle>(parse, index);
+				finish = new GlobalIndexConstructor<WritableRectangle, WritablePoint, CopyWritableLong>(parse, index);
 			}
 			if(construct == null){
 				System.err.println("Failed to provide a valid parser on build instruction");
 				System.exit(-1);
 			}
-			ToolRunner.run(sampler, args);
+			int check = ToolRunner.run(sampler, args);
+			if(check == 1){
+				System.err.println("The Sampler has failed to sample data");
+			}
 			ToolRunner.run(construct, args);
-			System.exit(ToolRunner.run(new BinaryReaderTest(), args));
+			if(check == 1){
+				System.err.println("Local Index Construction has failed\n Aborting index construction");
+				System.exit(1);
+			}
+			System.exit(ToolRunner.run(finish, args));
 		}
 	}
 	/**

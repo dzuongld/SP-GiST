@@ -23,7 +23,7 @@ public class BinaryReaderTest extends Configured implements Tool {
 	}
 
 	@SuppressWarnings("rawtypes")
-	public static class Map<KeyOut, ValueOut> extends Mapper<HSPIndexNode, HSPLeafNode, HSPIndexNode, HSPLeafNode> {
+	public static class Map extends Mapper<HSPIndexNode, HSPLeafNode, HSPIndexNode, HSPLeafNode> {
 		public void map(HSPIndexNode key, HSPLeafNode value, Context context) throws IOException, InterruptedException {
 			context.write((HSPIndexNode)key.copy(), (HSPLeafNode) value.copy());
 		}
