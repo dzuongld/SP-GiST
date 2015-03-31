@@ -1,4 +1,4 @@
-package edu.purdue.cs.HSPGiST.MapReduceJobs;
+package edu.purdue.cs.HSPGiST.Tests;
 
 import java.io.IOException;
 

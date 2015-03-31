@@ -12,11 +12,11 @@ import edu.purdue.cs.HSPGiST.AbstractClasses.HSPNode;
 
 /**
  * Representation of index nodes for HSP-GiST indices
- * These only store pointers to children node and a predicate
+ * These only store references to children nodes and a predicate
  * User Defined methods picksplit and consistent shouldn't
- * access need to access the children of these nodes
+ * need to access the children of these nodes
  * 
- * @author Stefan Brinton & Daniel Fortney
+ * @author Stefan Brinton
  *
  * @param <T> Predicate type
  * @param <K> Key type
@@ -28,18 +28,18 @@ public class HSPIndexNode<T,K,R>  extends HSPNode<T,K,R> implements WritableComp
 	public HSPIndexNode(){
 		children = new ArrayList<HSPNode<T,K,R>>();
 	}
-	public HSPIndexNode(T predicate,HSPNode<T,K,R> parent){
+	public HSPIndexNode(HSPNode<T,K,R> parent,T predicate){
 		children = new ArrayList<HSPNode<T,K,R>>();
 		setPredicate(predicate);
 		setParent(parent);
 	}
 	
-	public HSPIndexNode(ArrayList<HSPNode<T,K,R>> children,HSPNode<T,K,R> parent){
+	public HSPIndexNode(HSPNode<T,K,R> parent,ArrayList<HSPNode<T,K,R>> children){
 		this.children = children;
 		setParent(parent);
 	}
 	
-	public HSPIndexNode(T predicate,HSPNode<T,K,R> parent, ArrayList<HSPNode<T,K,R>> children){
+	public HSPIndexNode(HSPNode<T,K,R> parent,T predicate, ArrayList<HSPNode<T,K,R>> children){
 		this.children = new ArrayList<HSPNode<T,K,R>>();
 		for(HSPNode<T,K,R> child : children){
 			this.children.add(((Copyable<HSPNode<T,K,R>>)child).copy());
@@ -68,34 +68,8 @@ public class HSPIndexNode<T,K,R>  extends HSPNode<T,K,R> implements WritableComp
 			}
 		}
 	}
-	/**
-	 * Used only in GlobalReducer, don't use it anywhere else
-	 */
-	@SuppressWarnings("unchecked")
-	public HSPIndexNode(HSPIndex index, int level, T predicate, HSPNode<T,K,R> parent, int depth){
-		children = new ArrayList<HSPNode<T,K,R>>();
-		setParent(parent);
-		setPredicate(predicate);
-		ArrayList<HSPNode<T,K,R>> stack = new ArrayList<HSPNode<T,K,R>>();
-		ArrayList<ArrayList<Pair<K, R>>> junk = new ArrayList<ArrayList<Pair<K, R>>>();
-		for(int i = 0; i < index.numSpaceParts; i++){
-			junk.add(new ArrayList<Pair<K, R>>());
-		}
-		ArrayList<T> preds = new ArrayList<T>();
-		index.picksplit(new HSPLeafNode<T,K,R>(this, getPredicate()), depth, junk, preds);
-		if(depth == level){
-			for(int i = 0; i < index.numSpaceParts; i++){
-				children.add(new HSPLeafNode<T,K,R>(this, preds.get(i)));
-			}
-		}
-		else{
-			for(int i = 0; i < index.numSpaceParts; i++){
-				children.add(new HSPIndexNode<T,K,R>(index, level, preds.get(i), this, depth+1));
-			}
-		}
-		
-	}
-	public HSPIndexNode(T predicate, HSPNode<T,K,R> parent, HSPIndex<T,K,R> index, int level){
+	
+	public HSPIndexNode(HSPNode<T,K,R> parent, T predicate, HSPIndex<T,K,R> index, int level){
 		children = new ArrayList<HSPNode<T,K,R>>();
 		setParent(parent);
 		setPredicate(predicate);
@@ -139,7 +113,7 @@ public class HSPIndexNode<T,K,R>  extends HSPNode<T,K,R> implements WritableComp
 		int size = arg0.readInt();
 		for(int i = 0; i < size; i++){
 			//populate node with dummy children to get right size
-			children.add(new HSPIndexNode<T, K, R>( (T) null, this));
+			children.add(new HSPIndexNode<T, K, R>( this, (T) null));
 		}
 		String temp = arg0.readUTF();
 		try {
@@ -168,6 +142,6 @@ public class HSPIndexNode<T,K,R>  extends HSPNode<T,K,R> implements WritableComp
 	}
 	@Override
 	public HSPNode<T, K, R> copy() {
-		return new HSPIndexNode<T,K,R>(getPredicate(), getParent(), children);
+		return new HSPIndexNode<T,K,R>(getParent(), getPredicate(), children);
 	}
 }

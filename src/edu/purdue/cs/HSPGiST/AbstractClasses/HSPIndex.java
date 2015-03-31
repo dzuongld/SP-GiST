@@ -27,6 +27,7 @@ public abstract class HSPIndex<T, K, R> {
 	
 	public ArrayList<Pair<T,Integer>> partitionPreds = null;
 	public ArrayList<K> samples = null;
+	public HSPIndexNode<T,K,R> globalRoot = null;
 	/**
 	 * PathShrink Enum
 	 * NEVER - A tree will insert a value at the greatest depth possible
@@ -59,9 +60,10 @@ public abstract class HSPIndex<T, K, R> {
 	 * @param e The predicate to check for consistency with
 	 * @param q The key to check for consistency
 	 * @param level The depth within the tree (root is considered depth 1)
-	 * @return True if the key is consistent with the node's predicate
+	 * @return True if the key is consistent with the predicate
 	 */
 	public abstract boolean consistent(T e, K q, int level);
+
 	/**
 	 * Governs splitting of an overfull leaf into numSpaceParts leaves
 	 * also governs nodeshrink == false && pathshrink == NEVER trees creation of index nodes
@@ -87,6 +89,8 @@ public abstract class HSPIndex<T, K, R> {
 	 * When this method completes partitionPreds should contain numOfReducers (read as a number, e.g. 32) mutually exclusive predicates 
 	 * (no predicate is a part of another predicate's subtree) with the depth in the tree each predicate is at
 	 * In short, find mutually exclusive predicates such that an equal number of samples are in each predicate
+	 * Additionally, while finding partitionPreds this method should construct the Global Index Tree with
+	 * globalRoot
 	 * <br>
 	 * Note: The predicates should cover the spatial domain, e.g. four rectangles that represent the quadrants of a 2D Cartesian plot   
 	 * @param numOfReducers the number of Predicate , depth pairs needed
@@ -148,14 +152,14 @@ public abstract class HSPIndex<T, K, R> {
 					}
 				}
 				if(index == -1){
-					ind.children.add(new HSPIndexNode<T,K,R>(determinePredicate(key, ind.getPredicate(),level+1), ind));
+					ind.children.add(new HSPIndexNode<T,K,R>(ind, determinePredicate(key, ind.getPredicate(),level+1)));
 					index = ind.children.size()-1;
 				}
 				else{
 					//we got the next node but we need to check if it is a leaf and convert it to an
 					//index node if it is :: This only happens if PathShrink == NEVER && nodeshrink == false
 					if(ind.children.get(index) instanceof HSPLeafNode<?,?,?>){
-						HSPIndexNode<T,K,R> replace = new HSPIndexNode<T,K,R>(ind.children.get(index).getPredicate(), ind, this, level+1);
+						HSPIndexNode<T,K,R> replace = new HSPIndexNode<T,K,R>(ind, ind.children.get(index).getPredicate(), this, level+1);
 						ind.children.set(index, replace);
 					}
 				}
@@ -200,10 +204,10 @@ public abstract class HSPIndex<T, K, R> {
 				ArrayList<T> preds = new ArrayList<T>();
 				HSPIndexNode<T,K,R> replace;
 				overfull = picksplit(leaf, level, keysets, preds);
-				replace = new HSPIndexNode<T,K,R>(leaf.getPredicate(), leaf.getParent());
+				replace = new HSPIndexNode<T,K,R>(leaf.getParent(), leaf.getPredicate());
 				for(int i = 0; i < keysets.size(); i++){
 					if(keysets.get(i).size() != 0 || nodeShrink == false){
-						replace.children.add(new HSPLeafNode<T,K,R>(replace, keysets.get(i), preds.get(i)));
+						replace.children.add(new HSPLeafNode<T,K,R>(replace, preds.get(i), keysets.get(i)));
 					}
 				}
 				if(leaf.getParent()!=null){

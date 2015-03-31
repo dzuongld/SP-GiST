@@ -3,7 +3,7 @@ package edu.purdue.cs.HSPGiST.SupportClasses;
 import org.apache.hadoop.io.LongWritable;
 
 /**
- * Quick and Dirty implementation of a copyable LongWritable for debug
+ * A Copyable LongWritable
  * @author Stefan Brinton
  *
  */

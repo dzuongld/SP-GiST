@@ -24,6 +24,7 @@ import edu.purdue.cs.HSPGiST.AbstractClasses.Parser;
 import edu.purdue.cs.HSPGiST.SupportClasses.Copyable;
 import edu.purdue.cs.HSPGiST.SupportClasses.HSPIndexNode;
 import edu.purdue.cs.HSPGiST.SupportClasses.HSPLeafNode;
+import edu.purdue.cs.HSPGiST.SupportClasses.HSPReferenceNode;
 import edu.purdue.cs.HSPGiST.SupportClasses.Pair;
 import edu.purdue.cs.HSPGiST.UserDefinedSection.CommandInterpreter;
 
@@ -97,11 +98,17 @@ public class LocalIndexConstructor<MKIn, MVIn, MKOut, MVOut, Pred> extends Confi
 		}
 	}
 	private static class LocalPartitioner<MKOut, MVOut> extends Partitioner<MKOut, MVOut>{
-		@SuppressWarnings("unchecked")
+		@SuppressWarnings({ "unchecked", "rawtypes" })
 		@Override
 		public int getPartition(MKOut key, MVOut value, int numOfReducers) {
 			if(index.partitionPreds == null){
-				index.setupPartitions(numOfReducers);
+				if(numOfReducers == 1){
+					index.partitionPreds.add(new Pair(null, 1));
+					index.globalRoot = new HSPIndexNode(null, (HSPNode) null);
+					index.globalRoot.children.add(new HSPReferenceNode(index.globalRoot, null, new Path("part-r-00000")));
+				}
+				else
+					index.setupPartitions(numOfReducers);
 			}
 			return index.partition(key, value, numOfReducers);
 		}
@@ -142,7 +149,7 @@ public class LocalIndexConstructor<MKIn, MVIn, MKOut, MVOut, Pred> extends Confi
 						node = stack.remove(0);
 					}
 					else{
-						context.write((RKOut)new HSPIndexNode<Pred,MKOut,MVOut>((ArrayList<HSPNode<Pred,MKOut,MVOut>>)null, null),  (RVOut) node);
+						context.write((RKOut)new HSPIndexNode<Pred,MKOut,MVOut>(null, (ArrayList<HSPNode<Pred,MKOut,MVOut>>)null),  (RVOut) node);
 						node = null;
 					}
 				}

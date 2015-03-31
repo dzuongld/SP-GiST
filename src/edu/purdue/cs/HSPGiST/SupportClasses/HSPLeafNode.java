@@ -12,7 +12,7 @@ import edu.purdue.cs.HSPGiST.AbstractClasses.HSPNode;
 /**
  * Representation of leaf or data nodes in an index
  * 
- * @author Stefan Brinton & Daniel Fortney
+ * @author Stefan Brinton
  *
  * @param <T> Predicate Type
  * @param <K> Key Type
@@ -20,24 +20,29 @@ import edu.purdue.cs.HSPGiST.AbstractClasses.HSPNode;
  */
 public class HSPLeafNode<T,K,R> extends HSPNode<T,K,R> implements WritableComparable<HSPLeafNode<T,K,R>>{
 	public ArrayList<Pair<K,R>> keys;
+	
 	public HSPLeafNode(){
 		setParent(null);
 		keys = new ArrayList<Pair<K,R>>();
 	}
+	
 	public HSPLeafNode(HSPIndexNode<T,K,R> parent){
 		setParent(parent);
 		keys = new ArrayList<Pair<K,R>>();
 	}
+	
 	public HSPLeafNode(HSPIndexNode<T,K,R> parent,T predicate){
 		setParent(parent);
 		keys = new ArrayList<Pair<K,R>>();
 		setPredicate(predicate);
 	}
-	public HSPLeafNode(HSPIndexNode<T,K,R> parent,ArrayList<Pair<K,R>> keys, T predicate){
+	
+	public HSPLeafNode(HSPIndexNode<T,K,R> parent,T predicate, ArrayList<Pair<K,R>> keys){
 		setParent(parent);
 		this.keys = keys;
 		setPredicate(predicate);
 	}
+	
 	public String toString() {
 		if(keys.size() == 0)
 			return "";
@@ -46,6 +51,7 @@ public class HSPLeafNode<T,K,R> extends HSPNode<T,K,R> implements WritableCompar
 			stren.append(key.toString());
 		return stren.toString();
 	}
+	
 	@SuppressWarnings("unchecked")
 	@Override
 	public void readFields(DataInput arg0) throws IOException {
@@ -66,6 +72,7 @@ public class HSPLeafNode<T,K,R> extends HSPNode<T,K,R> implements WritableCompar
 			keys.add(adder);
 		}
 	}
+	
 	@SuppressWarnings("unchecked")
 	@Override
 	public void write(DataOutput arg0) throws IOException {
@@ -80,13 +87,15 @@ public class HSPLeafNode<T,K,R> extends HSPNode<T,K,R> implements WritableCompar
 			datum.write(arg0);
 		}
 	}
+	
 	@Override
 	public int compareTo(HSPLeafNode<T, K,R> o) {
 		//TODO: Implement more robust compareTo method
 		return this.keys.toString().compareTo(o.keys.toString());
 	}
+	
 	@Override
 	public HSPNode<T, K, R> copy() {
-		return new HSPLeafNode<T,K,R>((HSPIndexNode<T, K, R>) getParent(), keys, getPredicate());
+		return new HSPLeafNode<T,K,R>((HSPIndexNode<T, K, R>) getParent(), getPredicate(), keys);
 	}
 }

@@ -18,10 +18,11 @@ import org.apache.hadoop.io.WritableComparable;
 public class Pair<A, B> implements WritableComparable<Pair<A,B>>, Copyable<Pair<A,B>>{
     private A first;
     private B second;
-
+    
     public Pair(){
     	super();
     }
+    
     
     public Pair(A first, B second) {
     	super();

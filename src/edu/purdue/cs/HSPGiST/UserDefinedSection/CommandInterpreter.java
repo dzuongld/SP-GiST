@@ -6,13 +6,13 @@ import org.apache.hadoop.util.ToolRunner;
 
 import edu.purdue.cs.HSPGiST.AbstractClasses.HSPIndex;
 import edu.purdue.cs.HSPGiST.AbstractClasses.Parser;
-import edu.purdue.cs.HSPGiST.MapReduceJobs.BinaryReaderTest;
 import edu.purdue.cs.HSPGiST.MapReduceJobs.GlobalIndexConstructor;
 import edu.purdue.cs.HSPGiST.MapReduceJobs.LocalIndexConstructor;
 import edu.purdue.cs.HSPGiST.MapReduceJobs.RandomSample;
 import edu.purdue.cs.HSPGiST.SupportClasses.CopyWritableLong;
 import edu.purdue.cs.HSPGiST.SupportClasses.WritablePoint;
 import edu.purdue.cs.HSPGiST.SupportClasses.WritableRectangle;
+import edu.purdue.cs.HSPGiST.Tests.RawOutputReaderTest;
 
 /**
  * The command interpreter is the main of HSP-GiST
@@ -50,7 +50,7 @@ public class CommandInterpreter {
 				parse = new OSMParser();
 				sampler = new RandomSample<Object, Text, WritablePoint, Text>(parse, index);
 				construct = new LocalIndexConstructor<Object,Text,WritablePoint,CopyWritableLong,WritableRectangle>(parse, index);
-				finish = new GlobalIndexConstructor<WritableRectangle, WritablePoint, CopyWritableLong>(parse, index);
+				finish = new GlobalIndexConstructor(index, parse);
 			}
 			if(construct == null){
 				System.err.println("Failed to provide a valid parser on build instruction");
@@ -65,7 +65,8 @@ public class CommandInterpreter {
 				System.err.println("Local Index Construction has failed\n Aborting index construction");
 				System.exit(1);
 			}
-			System.exit(ToolRunner.run(finish, args));
+			ToolRunner.run(finish, args);
+			System.exit(ToolRunner.run(new RawOutputReaderTest(), args));
 		}
 	}
 	/**

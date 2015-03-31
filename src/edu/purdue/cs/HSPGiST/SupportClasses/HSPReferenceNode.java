@@ -9,28 +9,38 @@ import org.apache.hadoop.io.WritableComparable;
 
 import edu.purdue.cs.HSPGiST.AbstractClasses.HSPNode;
 
-public class HSPReferenceNode<T,K> extends HSPNode<T,K,Path> implements WritableComparable<HSPReferenceNode<T,K>>{
+/**
+ * These are the leaf nodes of the global index, providing paths to "local" index files
+ * @author Stefan Brinton
+ *
+ * @param <T> Predicate type
+ * @param <K> Key type
+ * @param <R> Record type
+ */
+public class HSPReferenceNode<T,K,R> extends HSPNode<T,K,R> implements WritableComparable<HSPReferenceNode<T,K,R>>{
 	public Path reference;
+	
 	public HSPReferenceNode(){
 		reference = null;
 	}
+	
 	@SuppressWarnings({ "unchecked", "rawtypes" })
-	public HSPReferenceNode(T predicate, HSPNode parent, Path path){
+	public HSPReferenceNode(HSPNode parent, T predicate, Path path){
 		reference = path;
 		setPredicate(predicate);
 		setParent(parent);
 	}
 	
 	@SuppressWarnings({ "unchecked", "rawtypes" })
-	public HSPReferenceNode(T predicate, HSPNode parent, String path){
+	public HSPReferenceNode(HSPNode parent, T predicate, String path){
 		reference = new Path(path);
 		setPredicate(predicate);
 		setParent(parent);
 	}
 	
 	@Override
-	public HSPNode<T, K, Path> copy() {
-		return new HSPReferenceNode<T,K>(getPredicate(),getParent(),reference);
+	public HSPNode<T, K, R> copy() {
+		return new HSPReferenceNode<T,K,R>(getParent(),getPredicate(),reference);
 	}
 
 	@SuppressWarnings("unchecked")
@@ -61,7 +71,7 @@ public class HSPReferenceNode<T,K> extends HSPNode<T,K,Path> implements Writable
 	}
 
 	@Override
-	public int compareTo(HSPReferenceNode<T, K> arg0) {
+	public int compareTo(HSPReferenceNode<T, K,R> arg0) {
 		return reference.toString().compareTo(arg0.toString());
 	}
 	

@@ -2,6 +2,8 @@ package edu.purdue.cs.HSPGiST;
 
 import java.util.ArrayList;
 
+import edu.purdue.cs.HSPGiST.AbstractClasses.HSPIndex;
+
 /**
  * Basic implementation of a trie
  * @author Dan Fortney

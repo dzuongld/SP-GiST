@@ -6,6 +6,8 @@ import java.io.IOException;
 
 import org.apache.hadoop.io.WritableComparable;
 
+import edu.purdue.cs.HSPGiST.SupportClasses.Copyable;
+
 /**
  * Simple writablestring implementation. Only represents the 26 lowercase letters.
  * @author Dan Fortney and Stefan Brinton
