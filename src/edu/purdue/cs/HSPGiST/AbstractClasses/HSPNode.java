@@ -11,8 +11,10 @@ import edu.purdue.cs.HSPGiST.SupportClasses.Copyable;
  * @param <R> Node record type
  */
 public abstract class HSPNode<T,K,R> implements Copyable<HSPNode<T,K,R>>{
-	private HSPNode<T,K,R> parent;
-	private T predicate;
+	protected HSPNode<T,K,R> parent;
+	protected T predicate;
+	
+	
 	/**
 	 * Predicate setter method
 	 * @param predicate Value to set predicate to

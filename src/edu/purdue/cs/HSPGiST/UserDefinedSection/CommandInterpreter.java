@@ -12,6 +12,7 @@ import edu.purdue.cs.HSPGiST.MapReduceJobs.RandomSample;
 import edu.purdue.cs.HSPGiST.SupportClasses.CopyWritableLong;
 import edu.purdue.cs.HSPGiST.SupportClasses.WritablePoint;
 import edu.purdue.cs.HSPGiST.SupportClasses.WritableRectangle;
+import edu.purdue.cs.HSPGiST.Tests.BinaryReaderTest;
 import edu.purdue.cs.HSPGiST.Tests.RawOutputReaderTest;
 
 /**

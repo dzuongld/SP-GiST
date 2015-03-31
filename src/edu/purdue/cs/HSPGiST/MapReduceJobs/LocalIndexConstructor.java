@@ -101,11 +101,10 @@ public class LocalIndexConstructor<MKIn, MVIn, MKOut, MVOut, Pred> extends Confi
 		@SuppressWarnings({ "unchecked", "rawtypes" })
 		@Override
 		public int getPartition(MKOut key, MVOut value, int numOfReducers) {
-			if(index.partitionPreds == null){
+			if(index.globalRoot.getChildren().size() == 0){
 				if(numOfReducers == 1){
-					index.partitionPreds.add(new Pair(null, 1));
-					index.globalRoot = new HSPIndexNode(null, (HSPNode) null);
-					index.globalRoot.children.add(new HSPReferenceNode(index.globalRoot, null, new Path("part-r-00000")));
+					index.globalRoot = new HSPIndexNode();
+					index.globalRoot.getChildren().add(new HSPReferenceNode(index.globalRoot, null, new Path("part-r-00000")));
 				}
 				else
 					index.setupPartitions(numOfReducers);
@@ -123,8 +122,9 @@ public class LocalIndexConstructor<MKIn, MVIn, MKOut, MVOut, Pred> extends Confi
 			//Get each reducer a reference to the index, setup an empty leaf root, and set the depth of the root
 			local = index;
 			int part = context.getConfiguration().getInt("mapreduce.task.partition", 0);
-			root = new HSPLeafNode<Pred, MKOut, MVOut>(null, local.partitionPreds.get(part).getFirst());
-			depth = local.partitionPreds.get(part).getSecond();
+			Pair<Pred,Integer> p = local.getPartition(part);
+			root = new HSPLeafNode<Pred, MKOut, MVOut>(null, p.getFirst());
+			depth = p.getSecond();
 		}
 		@SuppressWarnings("unchecked")
 		public void reduce(MKOut key, Iterable<MVOut> values, Context context) throws IOException, InterruptedException {
@@ -143,13 +143,13 @@ public class LocalIndexConstructor<MKIn, MVIn, MKOut, MVOut, Pred> extends Confi
 					if(node instanceof HSPIndexNode<?,?,?>){
 						HSPIndexNode<Pred,MKOut,MVOut> temp = (HSPIndexNode<Pred,MKOut,MVOut>)node;
 						context.write((RKOut)node,  (RVOut) new HSPLeafNode<Pred,MKOut,MVOut>(null));
-						for(int i = 0;i < temp.children.size();i++){
-							stack.add(temp.children.get(i));
+						for(int i = 0;i < temp.getChildren().size();i++){
+							stack.add(temp.getChildren().get(i));
 						}
 						node = stack.remove(0);
 					}
 					else{
-						context.write((RKOut)new HSPIndexNode<Pred,MKOut,MVOut>(null, (ArrayList<HSPNode<Pred,MKOut,MVOut>>)null),  (RVOut) node);
+						context.write((RKOut)new HSPIndexNode<Pred,MKOut,MVOut>(null),  (RVOut) node);
 						node = null;
 					}
 				}

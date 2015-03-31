@@ -43,8 +43,8 @@ public class BinaryReaderTest extends Configured implements Tool {
 
 		job.setNumReduceTasks(0);
 		job.setMapperClass(Map.class);
-		FileInputFormat.addInputPath(job, new Path(CommandInterpreter.CONSTRUCTFIRSTOUT));
-		FileOutputFormat.setOutputPath(job, new Path("TestOutput"));
+		FileInputFormat.setInputPaths(job, new Path(CommandInterpreter.CONSTRUCTFIRSTOUT + "-OSMParser-QuadTree-" + args[3]));
+		FileOutputFormat.setOutputPath(job, new Path("TextOutput"));
 
 		boolean succ = job.waitForCompletion(true);
 		/*FileSystem fs = FileSystem.get(getConf());

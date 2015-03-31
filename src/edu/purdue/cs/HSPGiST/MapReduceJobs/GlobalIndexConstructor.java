@@ -46,8 +46,8 @@ public class GlobalIndexConstructor extends Configured implements Tool{
 					HSPIndexNode temp = (HSPIndexNode)nodule;
 					output.writeBoolean(true);
 					temp.write(output);
-					for(int i = 0;i < temp.children.size();i++){
-						stack.add((HSPNode) temp.children.get(i));
+					for(int i = 0;i < temp.getChildren().size();i++){
+						stack.add((HSPNode) temp.getChildren().get(i));
 					}
 					nodule = stack.remove(0);
 				}

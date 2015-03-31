@@ -91,7 +91,7 @@ public class DeprecatedGIC<T,K,R> extends Configured implements Tool{
 				cleanup(context);
 			}
 		}
-		@SuppressWarnings("unchecked")
+		/*
 		public void map(HSPIndexNode key, HSPLeafNode value, Context context) throws IOException, InterruptedException {
 			if(key == null){
 				for(int i = 0; i < index.partitionPreds.size();i++){
@@ -109,7 +109,7 @@ public class DeprecatedGIC<T,K,R> extends Configured implements Tool{
 					}
 				}
 			}
-		}
+		}*/
 	}
 	
 	@SuppressWarnings("rawtypes")
@@ -153,31 +153,31 @@ public class DeprecatedGIC<T,K,R> extends Configured implements Tool{
 					for(int j = 0; j < odd.size(); j++){
 						HSPIndexNode temp = odd.get(j);
 						for(int i = 0; i< localRoots.size() && localRoots.get(i).getFirst().getSecond() <= low; i++){
-							for(int k = 0; k < temp.children.size() && (curDep == low || i == 0);k++){
+							for(int k = 0; k < temp.getChildren().size() && (curDep == low || i == 0);k++){
 								if(curDep == low){
-									if(((HSPNode) temp.children.get(k)).getPredicate().equals(localRoots.get(i).getFirst().getFirst())){
-										temp.children.set(k, new HSPReferenceNode<T,K,R>(temp, (T) ((HSPNode)temp.children.get(k)).getPredicate(), localRoots.get(i).getSecond()));
+									if(((HSPNode) temp.getChildren().get(k)).getPredicate().equals(localRoots.get(i).getFirst().getFirst())){
+										temp.getChildren().set(k, new HSPReferenceNode<T,K,R>(temp, (T) ((HSPNode)temp.getChildren().get(k)).getPredicate(), localRoots.get(i).getSecond()));
 										localRoots.remove(i--);
 										if(localRoots.size()!=0)
 											low = localRoots.get(0).getFirst().getSecond();
 										break;
 									}
 									else if(localRoots.size() == 1 || localRoots.get(i+1).getFirst().getSecond() > low){
-										if(temp.children.get(k) instanceof HSPLeafNode<?,?,?>){
+										if(temp.getChildren().get(k) instanceof HSPLeafNode<?,?,?>){
 											//temp.children.set(k, new HSPIndexNode<T,K,R>(temp, (T) ((HSPNode) temp.children.get(k)).getPredicate(),index, low+1, curDep));
 										}
-										else if(temp.children.get(k) instanceof HSPReferenceNode<?,?,?>)
+										else if(temp.getChildren().get(k) instanceof HSPReferenceNode<?,?,?>)
 											continue;
-										even.add((HSPIndexNode<T, K, R>) temp.children.get(k));
+										even.add((HSPIndexNode<T, K, R>) temp.getChildren().get(k));
 									}
 								}
 								else if(i == 0){
-									if(temp.children.get(k) instanceof HSPLeafNode<?,?,?>){
+									if(temp.getChildren().get(k) instanceof HSPLeafNode<?,?,?>){
 										//temp.children.set(k, new HSPIndexNode<T,K,R>(temp, (T) ((HSPNode) temp.children.get(k)).getPredicate(),index, low, curDep));
 									}
-									else if(temp.children.get(k) instanceof HSPReferenceNode<?,?,?>)
+									else if(temp.getChildren().get(k) instanceof HSPReferenceNode<?,?,?>)
 										continue;
-									even.add((HSPIndexNode<T, K, R>) temp.children.get(k));
+									even.add((HSPIndexNode<T, K, R>) temp.getChildren().get(k));
 								}
 							}
 						}
@@ -189,31 +189,31 @@ public class DeprecatedGIC<T,K,R> extends Configured implements Tool{
 					for(int j = 0; j < even.size(); j++){
 						HSPIndexNode temp = even.get(j);
 						for(int i = 0; i < localRoots.size() && localRoots.get(i).getFirst().getSecond() <= low; i++){
-							for(int k = 0; k < temp.children.size();k++){
+							for(int k = 0; k < temp.getChildren().size();k++){
 								if(curDep == low){
-									if(((HSPNode) temp.children.get(k)).getPredicate().equals(localRoots.get(i).getFirst().getFirst())){
-										temp.children.set(k, new HSPReferenceNode<T,K,R>(temp, (T) ((HSPNode)temp.children.get(k)).getPredicate(), localRoots.get(i).getSecond()));
+									if(((HSPNode) temp.getChildren().get(k)).getPredicate().equals(localRoots.get(i).getFirst().getFirst())){
+										temp.getChildren().set(k, new HSPReferenceNode<T,K,R>(temp, (T) ((HSPNode)temp.getChildren().get(k)).getPredicate(), localRoots.get(i).getSecond()));
 										localRoots.remove(i--);
 										if(localRoots.size()!=0)
 											low = localRoots.get(0).getFirst().getSecond();
 										break;
 									}
 									else if(localRoots.size() == 1 || localRoots.get(i+1).getFirst().getSecond() > low){
-										if(temp.children.get(k) instanceof HSPLeafNode<?,?,?>){
+										if(temp.getChildren().get(k) instanceof HSPLeafNode<?,?,?>){
 											//temp.children.set(k, new HSPIndexNode<T,K,R>(temp, (T) ((HSPNode) temp.children.get(k)).getPredicate(),index, low+1, curDep));
 										}
-										else if(temp.children.get(k) instanceof HSPReferenceNode<?,?,?>)
+										else if(temp.getChildren().get(k) instanceof HSPReferenceNode<?,?,?>)
 											continue;
-										odd.add((HSPIndexNode<T, K, R>) temp.children.get(k));
+										odd.add((HSPIndexNode<T, K, R>) temp.getChildren().get(k));
 									}
 								}
 								else if(i ==0){
-									if(temp.children.get(k) instanceof HSPLeafNode<?,?,?>){
+									if(temp.getChildren().get(k) instanceof HSPLeafNode<?,?,?>){
 										//temp.children.set(k, new HSPIndexNode<T,K,R>(temp, (T) ((HSPNode) temp.children.get(k)).getPredicate(),index, low, curDep));
 									}
-									else if(temp.children.get(k) instanceof HSPReferenceNode<?,?,?>)
+									else if(temp.getChildren().get(k) instanceof HSPReferenceNode<?,?,?>)
 										continue;
-									odd.add((HSPIndexNode<T, K, R>) temp.children.get(k));
+									odd.add((HSPIndexNode<T, K, R>) temp.getChildren().get(k));
 								}
 							}
 						}
@@ -231,13 +231,13 @@ public class DeprecatedGIC<T,K,R> extends Configured implements Tool{
 					if(nodule instanceof HSPIndexNode<?,?,?>){
 						HSPIndexNode<T,K,R> temp = (HSPIndexNode<T,K,R>)nodule;
 						context.write(temp, new HSPReferenceNode<T,K,R>());
-						for(int i = 0;i < temp.children.size();i++){
-							stack.add(temp.children.get(i));
+						for(int i = 0;i < temp.getChildren().size();i++){
+							stack.add(temp.getChildren().get(i));
 						}
 						nodule = stack.remove(0);
 					}
 					else{
-						context.write(new HSPIndexNode<T,K,R>(null, (ArrayList<HSPNode<T,K,R>>)null), (HSPReferenceNode) nodule);
+						context.write(new HSPIndexNode<T,K,R>(null), (HSPReferenceNode) nodule);
 						nodule = null;
 					}
 				}
