@@ -56,8 +56,8 @@ public class HSPIndexNode<T, K, R> extends HSPNode<T, K, R> implements
 	}
 
 	/**
-	 * This is a null constructor for creating a totally null HSPIndexNode This
-	 * is used to print "nothing" to output when writing a LocalIndex
+	 * This is a null constructor for creating a totally null HSPIndexNode<br>
+	 * This is used to print "nothing" to output when writing a LocalIndex
 	 * (context.write() does not allow null args it will NPE)
 	 * 
 	 * @param parent
@@ -90,8 +90,8 @@ public class HSPIndexNode<T, K, R> extends HSPNode<T, K, R> implements
 	}
 
 	/**
-	 * Used to construct indexNodes while performing insertion Reconsider what
-	 * you're doing if you try to call this elsewhere
+	 * Used to construct indexNodes while performing insertion<br>
+	 * Reconsider what you're doing if you try to call this elsewhere
 	 * 
 	 * @param parent
 	 *            The parent of the node

@@ -7,10 +7,11 @@ import java.io.IOException;
 import org.apache.hadoop.io.WritableComparable;
 
 /**
- * Java is silly and doesn't include a native pair class So we need to have one
- * for our parser so it can emit values to the mapper The code was written by a
- * forum user with no source information Irregular behavior is possible
- * Additional code has been added as necessary this includes implementations of
+ * Java is silly and doesn't include a native pair class<br>
+ * So we need to have one for our parser so it can emit values to the mapper<br>
+ * The code was written by a forum user with no source information<br>
+ * Irregular behavior is possible<br>
+ * Additional code has been added as necessary; this includes implementations of
  * WritableComparable and Copyable all methods belonging to them are expected to
  * work correctly
  */

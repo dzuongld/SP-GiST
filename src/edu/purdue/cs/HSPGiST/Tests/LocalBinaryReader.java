@@ -17,15 +17,27 @@ import edu.purdue.cs.HSPGiST.SupportClasses.HSPIndexNode;
 import edu.purdue.cs.HSPGiST.SupportClasses.HSPLeafNode;
 import edu.purdue.cs.HSPGiST.UserDefinedSection.CommandInterpreter;
 
-public class BinaryReaderTest extends Configured implements Tool {
-	public BinaryReaderTest() {
+/**
+ * Trivial class that will read from output of the local index constructor and
+ * output the binary in Text form <br>
+ * NOTE: part-m-xxxxx does not correspond to the file part-r-xxxxx The binary
+ * output doesn't match the text; however, there is a text file that matches up
+ * for each binary file
+ * 
+ * @author Stefan Brinton
+ *
+ */
+public class LocalBinaryReader extends Configured implements Tool {
+	public LocalBinaryReader() {
 		super();
 	}
 
 	@SuppressWarnings("rawtypes")
-	public static class Map extends Mapper<HSPIndexNode, HSPLeafNode, HSPIndexNode, HSPLeafNode> {
-		public void map(HSPIndexNode key, HSPLeafNode value, Context context) throws IOException, InterruptedException {
-			context.write((HSPIndexNode)key.copy(), (HSPLeafNode) value.copy());
+	public static class Map extends
+			Mapper<HSPIndexNode, HSPLeafNode, HSPIndexNode, HSPLeafNode> {
+		public void map(HSPIndexNode key, HSPLeafNode value, Context context)
+				throws IOException, InterruptedException {
+			context.write((HSPIndexNode) key.copy(), (HSPLeafNode) value.copy());
 		}
 	}
 
@@ -33,8 +45,8 @@ public class BinaryReaderTest extends Configured implements Tool {
 	public int run(String[] args) throws Exception {
 		Configuration conf = new Configuration();
 
-		Job job = Job.getInstance(conf, "Binary_Test");
-		job.setJarByClass(BinaryReaderTest.class);
+		Job job = Job.getInstance(conf, "LocalBinaryTest");
+		job.setJarByClass(LocalBinaryReader.class);
 
 		job.setOutputKeyClass(HSPIndexNode.class);
 		job.setOutputValueClass(HSPLeafNode.class);
@@ -43,12 +55,18 @@ public class BinaryReaderTest extends Configured implements Tool {
 
 		job.setNumReduceTasks(0);
 		job.setMapperClass(Map.class);
-		FileInputFormat.setInputPaths(job, new Path(CommandInterpreter.CONSTRUCTFIRSTOUT + "-OSMParser-QuadTree-" + args[3]));
+		// This is a hardcoded
+		StringBuilder sb = new StringBuilder(
+				CommandInterpreter.CONSTRUCTFIRSTOUT);
+		FileInputFormat.setInputPaths(job,
+				new Path(sb.append(CommandInterpreter.postScript).toString()));
 		FileOutputFormat.setOutputPath(job, new Path("TextOutput"));
 
 		boolean succ = job.waitForCompletion(true);
-		/*FileSystem fs = FileSystem.get(getConf());
-		fs.delete(new Path("temp"), true);*/
+		/*
+		 * FileSystem fs = FileSystem.get(getConf()); fs.delete(new
+		 * Path("temp"), true);
+		 */
 		return succ ? 0 : 1;
 	}
 

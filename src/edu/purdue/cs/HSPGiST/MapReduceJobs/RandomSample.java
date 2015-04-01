@@ -19,7 +19,18 @@ import edu.purdue.cs.HSPGiST.AbstractClasses.Parser;
 import edu.purdue.cs.HSPGiST.SupportClasses.Copyable;
 import edu.purdue.cs.HSPGiST.SupportClasses.Pair;
 
-public class RandomSample<MKIn, MVIn, MKOut, MVOut> extends Configured implements Tool {
+/**
+ * A simple random sampler
+ * 
+ * @author Stefan Brinton
+ *
+ * @param <MKIn>
+ * @param <MVIn>
+ * @param <MKOut>
+ * @param <MVOut>
+ */
+public class RandomSample<MKIn, MVIn, MKOut, MVOut> extends Configured
+		implements Tool {
 	@SuppressWarnings("rawtypes")
 	static Parser parse;
 	@SuppressWarnings("rawtypes")
@@ -32,24 +43,29 @@ public class RandomSample<MKIn, MVIn, MKOut, MVOut> extends Configured implement
 		RandomSample.index = index;
 	}
 
-	public static class Map<MKIn, MVIn, MKOut, MVOut> extends Mapper<MKIn, MVIn, MKOut, MVOut> {
+	public static class Map<MKIn, MVIn, MKOut, MVOut> extends
+			Mapper<MKIn, MVIn, MKOut, MVOut> {
 		private Random rand;
-		public void setup(Context context){
+
+		public void setup(Context context) {
 			rand = new Random();
 		}
+
 		@SuppressWarnings({ "rawtypes", "unchecked" })
-		public void map(MKIn key, MVIn value, Context context) throws IOException, InterruptedException {
+		public void map(MKIn key, MVIn value, Context context)
+				throws IOException, InterruptedException {
 			if (parse.isArrayParse) {
-				ArrayList<Pair<MKOut, MVOut>> list = parse.arrayParse(key,value);
+				ArrayList<Pair<MKOut, MVOut>> list = parse.arrayParse(key,
+						value);
 				Pair<MKOut, MVOut> pair = null;
 				for (int i = 0; i < list.size(); i++) {
 					pair = list.get(i);
-					if(rand.nextDouble()<0.5)
+					if (rand.nextDouble() < 0.1)
 						index.samples.add(((Copyable) pair.getFirst()).copy());
 				}
 			} else {
 				Pair<MKOut, MVOut> pair = parse.parse(key, value);
-				if(rand.nextDouble()<0.1)
+				if (rand.nextDouble() < 0.1)
 					index.samples.add(((Copyable) pair.getFirst()).copy());
 			}
 		}

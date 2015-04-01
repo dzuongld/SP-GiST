@@ -12,14 +12,13 @@ import edu.purdue.cs.HSPGiST.MapReduceJobs.RandomSample;
 import edu.purdue.cs.HSPGiST.SupportClasses.CopyWritableLong;
 import edu.purdue.cs.HSPGiST.SupportClasses.WritablePoint;
 import edu.purdue.cs.HSPGiST.SupportClasses.WritableRectangle;
-import edu.purdue.cs.HSPGiST.Tests.BinaryReaderTest;
-import edu.purdue.cs.HSPGiST.Tests.RawOutputReaderTest;
+import edu.purdue.cs.HSPGiST.Tests.GlobalBinaryReader;
 
 /**
- * The command interpreter is the main of HSP-GiST
- * It takes user input to run one of the Jobs/Jobsets
- * It requires updating to add user classes to allow expedient
- * command line use 
+ * The command interpreter is the main of HSP-GiST It takes user input to run
+ * one of the Jobs/Jobsets It requires updating to add user classes to allow
+ * expedient command line use
+ * 
  * @author Stefan Brinton & Daniel Fortney
  *
  */
@@ -28,13 +27,22 @@ public class CommandInterpreter {
 	 * The prefix for the output directory for LocalIndexConstuctor
 	 */
 	public static final String CONSTRUCTFIRSTOUT = "Local";
+
 	/**
 	 * The prefix for the output directory for GlobalIndexConstructor
 	 */
 	public static final String CONSTRUCTSECONDOUT = "Global";
-	@SuppressWarnings({ "rawtypes" })
-	public static void main(String args[]) throws Exception{
-		//Determines the operation to run
+
+	/**
+	 * The suffix for the output directories
+	 */
+	public static String postScript = "";
+
+	public static final String GLOBALFILE = "GlobalTree";
+
+	@SuppressWarnings({ "rawtypes", "unchecked" })
+	public static void main(String args[]) throws Exception {
+		// Determines the operation to run
 		// DO NOT MODIFY
 		switch (args[0]) {
 		case "build":
@@ -43,45 +51,59 @@ public class CommandInterpreter {
 			LocalIndexConstructor construct = null;
 			GlobalIndexConstructor finish = null;
 			RandomSample sampler = null;
-			//This switch statement determines the parser
-			//Add cases for your parsers to add them
-			switch(args[2]){
+			// This switch statement determines the parser
+			// Add cases for your parsers to add them
+			switch (args[2]) {
 			case "OSM":
 				index = makeIndex(args[1], new LongWritable());
 				parse = new OSMParser();
-				sampler = new RandomSample<Object, Text, WritablePoint, Text>(parse, index);
-				construct = new LocalIndexConstructor<Object,Text,WritablePoint,CopyWritableLong,WritableRectangle>(parse, index);
+				sampler = new RandomSample<Object, Text, WritablePoint, Text>(
+						parse, index);
+				construct = new LocalIndexConstructor<Object, Text, WritablePoint, CopyWritableLong, WritableRectangle>(
+						parse, index);
 				finish = new GlobalIndexConstructor(index, parse);
+				StringBuilder sb = new StringBuilder("-");
+				postScript = sb.append(parse.getClass().getSimpleName())
+						.append("-").append(index.getClass().getSimpleName())
+						.append("-").append(args[3]).toString();
+
 			}
-			if(construct == null){
-				System.err.println("Failed to provide a valid parser on build instruction");
+			if (construct == null) {
+				System.err
+						.println("Failed to provide a valid parser on build instruction");
 				System.exit(-1);
 			}
 			int check = ToolRunner.run(sampler, args);
-			if(check == 1){
+			if (check == 1) {
 				System.err.println("The Sampler has failed to sample data");
 			}
 			ToolRunner.run(construct, args);
-			if(check == 1){
-				System.err.println("Local Index Construction has failed\n Aborting index construction");
+			if (check == 1) {
+				System.err
+						.println("Local Index Construction has failed\n Aborting index construction");
 				System.exit(1);
 			}
 			ToolRunner.run(finish, args);
-			System.exit(ToolRunner.run(new RawOutputReaderTest(), args));
+			System.exit(ToolRunner.run(new GlobalBinaryReader(), args));
 		}
 	}
+
 	/**
-	 * This method encapsulates index creation so to expedite user
-	 * addition of parsers and index types
-	 * @param arg This argument is args[1], i.e. the name of the index type
-	 * @param infer This argument is used to let the method infer the type of the sp tree
+	 * This method encapsulates index creation so to expedite user addition of
+	 * parsers and index types
+	 * 
+	 * @param arg
+	 *            This argument is args[1], i.e. the name of the index type
+	 * @param infer
+	 *            This argument is used to let the method infer the type of the
+	 *            sp tree
 	 * @return An new instance of that index type
 	 */
 	@SuppressWarnings("rawtypes")
-	public static <R> HSPIndex makeIndex(String arg, R infer){
-		//This switch statement determines the index type
-		//Add cases for your parsers to add them
-		switch(arg){
+	public static <R> HSPIndex makeIndex(String arg, R infer) {
+		// This switch statement determines the index type
+		// Add cases for your parsers to add them
+		switch (arg) {
 		case "Quad":
 			return new QuadTree<R>();
 		}
