@@ -1,4 +1,4 @@
-package edu.purdue.cs.HSPGiST;
+package edu.purdue.cs.HSPGiST.SupportClasses;
 
 import java.io.DataInput;
 import java.io.DataOutput;
@@ -27,19 +27,10 @@ public class WritableString implements WritableComparable<WritableString>, Copya
 		return str;
 	}
 	public void readFields(DataInput in) throws IOException {
-		str = "";
-		try{
-			while (str.length() >= 0){
-				str += in.readChar();
-			}
-		}catch(IOException e){
-			str+="-";
-		}
+		str = in.readUTF();
 	}
 	public void write(DataOutput out) throws IOException {
-		for (int i=0; i<str.length()-1; i++){
-			out.writeChar(str.charAt(i));
-		}
+		out.writeUTF(str);
 	}
 	public int hashCode() {
 		//TODO: better hash code

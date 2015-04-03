@@ -1,4 +1,4 @@
-package edu.purdue.cs.HSPGiST;
+package edu.purdue.cs.HSPGiST.SupportClasses;
 
 import java.io.DataInput;
 import java.io.DataOutput;

@@ -9,9 +9,7 @@ import edu.purdue.cs.HSPGiST.AbstractClasses.Parser;
 import edu.purdue.cs.HSPGiST.MapReduceJobs.GlobalIndexConstructor;
 import edu.purdue.cs.HSPGiST.MapReduceJobs.LocalIndexConstructor;
 import edu.purdue.cs.HSPGiST.MapReduceJobs.RandomSample;
-import edu.purdue.cs.HSPGiST.SupportClasses.CopyWritableLong;
-import edu.purdue.cs.HSPGiST.SupportClasses.WritablePoint;
-import edu.purdue.cs.HSPGiST.SupportClasses.WritableRectangle;
+import edu.purdue.cs.HSPGiST.SupportClasses.*;
 import edu.purdue.cs.HSPGiST.Tests.GlobalBinaryReader;
 
 /**
@@ -51,6 +49,7 @@ public class CommandInterpreter {
 			LocalIndexConstructor construct = null;
 			GlobalIndexConstructor finish = null;
 			RandomSample sampler = null;
+			StringBuilder sb = null;
 			// This switch statement determines the parser
 			// Add cases for your parsers to add them
 			switch (args[2]) {
@@ -62,11 +61,23 @@ public class CommandInterpreter {
 				construct = new LocalIndexConstructor<Object, Text, WritablePoint, CopyWritableLong, WritableRectangle>(
 						parse, index);
 				finish = new GlobalIndexConstructor(index, parse);
-				StringBuilder sb = new StringBuilder("-");
+				sb = new StringBuilder("-");
 				postScript = sb.append(parse.getClass().getSimpleName())
 						.append("-").append(index.getClass().getSimpleName())
 						.append("-").append(args[3]).toString();
-
+				break;
+			case "BasicTrie":
+				index = makeIndex(args[1], new LongWritable());
+				parse = new BasicTrieParser();
+				sampler = new RandomSample<Object, Text, WritableString, Text>(parse, index);
+				construct = new LocalIndexConstructor<Object, Text, WritableString, CopyWritableLong, WritableChar>
+						(parse, index);
+				finish = new GlobalIndexConstructor(index, parse);
+				sb = new StringBuilder("-");
+				postScript = sb.append(parse.getClass().getSimpleName())
+						.append("-").append(index.getClass().getSimpleName())
+						.append("-").append(args[3]).toString();
+				break;
 			}
 			if (construct == null) {
 				System.err
@@ -106,6 +117,8 @@ public class CommandInterpreter {
 		switch (arg) {
 		case "Quad":
 			return new QuadTree<R>();
+		case "Trie":
+			return new Trie<R>();
 		}
 		System.err.println("Failed to provide a valid index tree type");
 		System.exit(-1);
