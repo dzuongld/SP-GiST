@@ -67,7 +67,7 @@ public class GlobalIndexConstructor extends Configured implements Tool {
 					for (int i = 0; i < temp.getChildren().size(); i++) {
 						stack.add((HSPNode) temp.getChildren().get(i));
 					}
-					nodule = stack.remove(0);
+					nodule = stack.remove(stack.size()-1);
 				} else {
 					//See above comment
 					output.writeBoolean(false);
@@ -75,7 +75,7 @@ public class GlobalIndexConstructor extends Configured implements Tool {
 					nodule = null;
 				}
 			} else
-				nodule = stack.remove(0);
+				nodule = stack.remove(stack.size()-1);
 		}
 		//Close and return success
 		output.close();

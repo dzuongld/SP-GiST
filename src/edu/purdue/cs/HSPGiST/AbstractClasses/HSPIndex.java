@@ -103,6 +103,23 @@ public abstract class HSPIndex<T, K, R> {
 	public abstract boolean consistent(T e, K q, int level);
 
 	/**
+	 * This method checks if a given predicate is consistent with a key within
+	 * the range of k1 and k2
+	 * 
+	 * @param e
+	 *            The predicate being checked
+	 * @param k1
+	 *            The first key in the range
+	 * @param k2
+	 *            The second key in the range
+	 * @param level
+	 *            The depth of the predicate
+	 * @return True if any key in the range k1 to k2 is consistent with the
+	 *         predicate e
+	 */
+	public abstract boolean range(T e, K k1, K k2, int level);
+
+	/**
 	 * Governs splitting of an overfull leaf into numSpaceParts leaves also
 	 * governs nodeshrink == false && pathshrink == NEVER trees creation of
 	 * index nodes with correct predicates (if you have a tree with those values

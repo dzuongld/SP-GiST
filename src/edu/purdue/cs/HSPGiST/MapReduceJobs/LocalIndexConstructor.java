@@ -98,7 +98,7 @@ public class LocalIndexConstructor<MKIn, MVIn, MKOut, MVOut, Pred> extends
 		if (numOfReduce - 1 % index.numSpaceParts - 1 == 0)
 			numOfReduce = ((numOfReduce - 1) / (index.numSpaceParts - 1) + 1)
 					* (index.numSpaceParts - 1) + 1;
-		job.setNumReduceTasks(numOfReduce);
+		job.setNumReduceTasks(22);
 		boolean succ = job.waitForCompletion(true);
 		if (!succ) {
 			FileSystem fs = FileSystem.get(getConf());
@@ -241,7 +241,7 @@ public class LocalIndexConstructor<MKIn, MVIn, MKOut, MVOut, Pred> extends
 		public void cleanup(Context context) throws IOException,
 				InterruptedException {
 			/*
-			 * Output the nodes in level order 
+			 * Output the nodes in pre-order 
 			 * context.write cannot handle nulls
 			 * so we use "empty" nodes instead
 			 */
@@ -257,7 +257,7 @@ public class LocalIndexConstructor<MKIn, MVIn, MKOut, MVOut, Pred> extends
 						for (int i = 0; i < temp.getChildren().size(); i++) {
 							stack.add(temp.getChildren().get(i));
 						}
-						node = stack.remove(0);
+						node = stack.remove(stack.size()-1);
 					} else {
 						context.write(
 								(RKOut) new HSPIndexNode<Pred, MKOut, MVOut>(
@@ -265,7 +265,7 @@ public class LocalIndexConstructor<MKIn, MVIn, MKOut, MVOut, Pred> extends
 						node = null;
 					}
 				} else
-					node = stack.remove(0);
+					node = stack.remove(stack.size()-1);
 			}
 		}
 	}

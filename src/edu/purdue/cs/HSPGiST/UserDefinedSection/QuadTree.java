@@ -190,4 +190,11 @@ public class QuadTree<R> extends HSPIndex<WritableRectangle,WritablePoint,R>{
 		makeReferences(lowNodes);
 	}
 
+	@Override
+	public boolean range(WritableRectangle e, WritablePoint k1,
+			WritablePoint k2, int level) {
+		WritableRectangle range = new WritableRectangle(k1.getX(), k1.getY(), k2.getY() - k1.getY(),k2.getX()-k1.getX());
+		return range.overlaps(e);
+	}
+
 }
