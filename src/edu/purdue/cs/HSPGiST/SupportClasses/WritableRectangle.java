@@ -14,7 +14,7 @@ import org.apache.hadoop.io.WritableComparable;
  *
  */
 public class WritableRectangle implements
-		WritableComparable<WritableRectangle>, Copyable<WritableRectangle> {
+		WritableComparable<WritableRectangle>, Copyable<WritableRectangle>, Sized {
 	private double x;
 	private double y;
 	private double h;
@@ -124,6 +124,22 @@ public class WritableRectangle implements
 		return false;
 	}
 
+	public boolean overlaps(WritableRectangle r) {
+		WritablePoint p1 = new WritablePoint(x, y);
+		WritablePoint p2 = new WritablePoint(x + w, y);
+		WritablePoint p3 = new WritablePoint(x, y + h);
+		WritablePoint p4 = new WritablePoint(x + w, y + h);
+		boolean ret = r.contains(p1) || r.contains(p2) || r.contains(p3)
+				|| r.contains(p4);
+		if (ret)
+			return ret;
+		p1 = new WritablePoint(r.getX(), r.getY());
+		p2 = new WritablePoint(r.getX() + r.getW(), r.getY());
+		p3 = new WritablePoint(r.getX(), r.getY() + r.getH());
+		p3 = new WritablePoint(r.getX() + r.getW(), r.getY() + r.getH());
+		return contains(p1) || contains(p2) || contains(p3) || contains(p4);
+	}
+
 	@Override
 	public boolean equals(Object o) {
 		if (!(o instanceof WritableRectangle))
@@ -177,5 +193,11 @@ public class WritableRectangle implements
 	@Override
 	public WritableRectangle copy() {
 		return new WritableRectangle(x, y, h, w);
+	}
+
+	@Override
+	public long getSize() {
+		//Divide by 8 for bits to bytes * 4 for 4 doubles
+		return Double.SIZE>>1;
 	}
 }

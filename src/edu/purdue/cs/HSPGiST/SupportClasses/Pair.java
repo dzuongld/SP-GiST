@@ -16,7 +16,7 @@ import org.apache.hadoop.io.WritableComparable;
  * work correctly
  */
 public class Pair<A, B> implements WritableComparable<Pair<A, B>>,
-		Copyable<Pair<A, B>> {
+		Copyable<Pair<A, B>>, Sized {
 	private A first;
 	private B second;
 
@@ -142,5 +142,13 @@ public class Pair<A, B> implements WritableComparable<Pair<A, B>>,
 	@Override
 	public Pair<A, B> copy() {
 		return new Pair<A, B>(first, second);
+	}
+
+	@Override
+	public long getSize() {
+		//2*2 bytes for UTF length, lengths of class names, and the sizes of the predicates themselves
+		return 4 + first.getClass().getName().length()
+				+ second.getClass().getName().length()
+				+ ((Sized) first).getSize() + ((Sized) second).getSize();
 	}
 }

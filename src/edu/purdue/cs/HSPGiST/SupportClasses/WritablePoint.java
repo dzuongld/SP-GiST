@@ -14,7 +14,7 @@ import org.apache.hadoop.io.WritableComparable;
  *
  */
 public class WritablePoint implements WritableComparable<WritablePoint>,
-		Copyable<WritablePoint> {
+		Copyable<WritablePoint>, Sized {
 	private double x;
 	private double y;
 
@@ -109,5 +109,11 @@ public class WritablePoint implements WritableComparable<WritablePoint>,
 	@Override
 	public WritablePoint copy() {
 		return clone();
+	}
+
+	@Override
+	public long getSize() {
+		//Divide by 8 for bits to bytes and * 2 for 2 doubles
+		return Double.SIZE>>2;
 	}
 }

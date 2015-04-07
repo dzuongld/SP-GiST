@@ -21,6 +21,7 @@ import org.apache.hadoop.util.Tool;
 import edu.purdue.cs.HSPGiST.AbstractClasses.HSPIndex;
 import edu.purdue.cs.HSPGiST.AbstractClasses.HSPNode;
 import edu.purdue.cs.HSPGiST.AbstractClasses.Parser;
+import edu.purdue.cs.HSPGiST.HadoopClasses.LocalHSPGiSTOutputFormat;
 import edu.purdue.cs.HSPGiST.SupportClasses.Copyable;
 import edu.purdue.cs.HSPGiST.SupportClasses.HSPIndexNode;
 import edu.purdue.cs.HSPGiST.SupportClasses.HSPLeafNode;
@@ -71,7 +72,7 @@ public class LocalIndexConstructor<MKIn, MVIn, MKOut, MVOut, Pred> extends
 		job.setOutputKeyClass(HSPIndexNode.class);
 		job.setOutputValueClass(HSPLeafNode.class);
 		job.setInputFormatClass(TextInputFormat.class);
-		job.setOutputFormatClass(SequenceFileOutputFormat.class);
+		job.setOutputFormatClass(LocalHSPGiSTOutputFormat.class);
 		FileInputFormat.addInputPath(job, new Path(args[3]));
 		StringBuilder sb = new StringBuilder(
 				CommandInterpreter.CONSTRUCTFIRSTOUT);
@@ -240,10 +241,16 @@ public class LocalIndexConstructor<MKIn, MVIn, MKOut, MVOut, Pred> extends
 		@SuppressWarnings("unchecked")
 		public void cleanup(Context context) throws IOException,
 				InterruptedException {
+			// Call getSize() this call will set the sizes of all nodes in the
+			// tree once
+			// We save dynamic updates to size which would be costly versus a
+			// single mass update
+			System.out.println(System.currentTimeMillis());
+			root.getSize();
+			System.out.println(System.currentTimeMillis());
+			root.setOffset(depth);
 			/*
-			 * Output the nodes in pre-order 
-			 * context.write cannot handle nulls
-			 * so we use "empty" nodes instead
+			 * Output the nodes in pre-order
 			 */
 			ArrayList<HSPNode<Pred, MKOut, MVOut>> stack = new ArrayList<HSPNode<Pred, MKOut, MVOut>>();
 			HSPNode<Pred, MKOut, MVOut> node = root;
@@ -251,21 +258,23 @@ public class LocalIndexConstructor<MKIn, MVIn, MKOut, MVOut, Pred> extends
 				if (node != null) {
 					if (node instanceof HSPIndexNode<?, ?, ?>) {
 						HSPIndexNode<Pred, MKOut, MVOut> temp = (HSPIndexNode<Pred, MKOut, MVOut>) node;
-						context.write((RKOut) node,
-								(RVOut) new HSPLeafNode<Pred, MKOut, MVOut>(
-										null));
+						if(local.path == HSPIndex.PathShrink.TREE && temp.getChildren().size() == 1){
+							node = temp.getChildren().get(0);
+							node.setOffset(node.getOffset() + 1);
+							node.setPredicate(temp.getPredicate());
+							continue;
+						}
+						context.write((RKOut) node, null);
 						for (int i = 0; i < temp.getChildren().size(); i++) {
 							stack.add(temp.getChildren().get(i));
 						}
-						node = stack.remove(stack.size()-1);
+						node = stack.remove(stack.size() - 1);
 					} else {
-						context.write(
-								(RKOut) new HSPIndexNode<Pred, MKOut, MVOut>(
-										null), (RVOut) node);
+						context.write(null, (RVOut) node);
 						node = null;
 					}
 				} else
-					node = stack.remove(stack.size()-1);
+					node = stack.remove(stack.size() - 1);
 			}
 		}
 	}

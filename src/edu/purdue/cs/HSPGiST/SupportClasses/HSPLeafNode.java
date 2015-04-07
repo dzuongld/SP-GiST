@@ -146,8 +146,8 @@ public class HSPLeafNode<T, K, R> extends HSPNode<T, K, R> implements
 	@SuppressWarnings("unchecked")
 	@Override
 	public void readFields(DataInput arg0) throws IOException {
-		keyRecords = new ArrayList<Pair<K, R>>();
-		int count = arg0.readInt();
+		size = arg0.readLong();
+		
 		// Get class of predicate to read its fields and set this predicate
 		String temp = arg0.readUTF();
 		try {
@@ -160,7 +160,10 @@ public class HSPLeafNode<T, K, R> extends HSPNode<T, K, R> implements
 			// Additionally catches "null" class
 			setPredicate(null);
 		}
+		setOffset(arg0.readInt());
 		// Read data for this node
+		keyRecords = new ArrayList<Pair<K, R>>();
+		int count = arg0.readInt();
 		for (int i = 0; i < count; i++) {
 			Pair<K, R> adder = new Pair<K, R>();
 			adder.readFields(arg0);
@@ -171,7 +174,9 @@ public class HSPLeafNode<T, K, R> extends HSPNode<T, K, R> implements
 	@SuppressWarnings("unchecked")
 	@Override
 	public void write(DataOutput arg0) throws IOException {
-		arg0.writeInt(keyRecords.size());
+		arg0.writeBoolean(false);
+		arg0.writeLong(size);
+		
 		// Write predicate class name so we can invoke one when reading this
 		// back
 		if (getPredicate() == null)
@@ -180,6 +185,8 @@ public class HSPLeafNode<T, K, R> extends HSPNode<T, K, R> implements
 			arg0.writeUTF(getPredicate().getClass().getName());
 			((WritableComparable<T>) getPredicate()).write(arg0);
 		}
+		arg0.writeInt(getOffset());
+		arg0.writeInt(keyRecords.size());
 		for (Pair<K, R> datum : keyRecords) {
 			datum.write(arg0);
 		}
@@ -189,5 +196,20 @@ public class HSPLeafNode<T, K, R> extends HSPNode<T, K, R> implements
 	public HSPNode<T, K, R> copy() {
 		return new HSPLeafNode<T, K, R>((HSPIndexNode<T, K, R>) getParent(),
 				getPredicate(), keyRecords);
+	}
+
+	@Override
+	public long getSize() {
+		for(Pair<K,R> datum : keyRecords)
+			size += ((Sized)datum).getSize();
+		size += Integer.SIZE>>3;
+		long selfSize = (Integer.SIZE>>3) + (Long.SIZE>>3) + 1;
+		if(predicate == null)
+			selfSize += 6; //UTF outputs 2 bytes for length of string then the string is 4 bytes
+		else{
+			//2 for UTF output length, length of UTF string, and the predicate's size
+			selfSize += 2 + predicate.getClass().getName().length() + ((Sized)predicate).getSize();
+		}
+		return size + selfSize;
 	}
 }

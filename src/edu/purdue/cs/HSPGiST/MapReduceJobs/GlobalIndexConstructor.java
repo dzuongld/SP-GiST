@@ -51,8 +51,9 @@ public class GlobalIndexConstructor extends Configured implements Tool {
 		Path globalIndexFile = new Path(sb.append("/")
 				.append(CommandInterpreter.GLOBALFILE).toString());
 		FSDataOutputStream output = hdfs.create(globalIndexFile);
-		// Print nodes in level order to file
+		// Print nodes in preorder to file
 		HSPNode nodule = index.globalRoot;
+		index.globalRoot.getSize();
 		ArrayList<HSPNode> stack = new ArrayList<HSPNode>();
 		while (!(stack.size() == 0 && nodule == null)) {
 			if (nodule != null) {
@@ -62,7 +63,6 @@ public class GlobalIndexConstructor extends Configured implements Tool {
 					// one either,
 					// we need to put boolean sentinels to mark if this node is
 					// an index node or a reference node
-					output.writeBoolean(true);
 					temp.write(output);
 					for (int i = 0; i < temp.getChildren().size(); i++) {
 						stack.add((HSPNode) temp.getChildren().get(i));
@@ -70,7 +70,6 @@ public class GlobalIndexConstructor extends Configured implements Tool {
 					nodule = stack.remove(stack.size()-1);
 				} else {
 					//See above comment
-					output.writeBoolean(false);
 					((HSPReferenceNode) nodule).write(output);
 					nodule = null;
 				}

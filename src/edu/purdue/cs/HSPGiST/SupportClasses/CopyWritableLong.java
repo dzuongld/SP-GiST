@@ -9,7 +9,7 @@ import org.apache.hadoop.io.LongWritable;
  *
  */
 public class CopyWritableLong extends LongWritable implements
-		Copyable<CopyWritableLong> {
+		Copyable<CopyWritableLong>, Sized {
 	public CopyWritableLong() {
 		super();
 	}
@@ -25,6 +25,11 @@ public class CopyWritableLong extends LongWritable implements
 	@Override
 	public CopyWritableLong copy() {
 		return new CopyWritableLong(get());
+	}
+
+	@Override
+	public long getSize() {
+		return Long.SIZE>>3;
 	}
 
 }

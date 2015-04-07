@@ -9,6 +9,7 @@ import edu.purdue.cs.HSPGiST.AbstractClasses.Parser;
 import edu.purdue.cs.HSPGiST.MapReduceJobs.GlobalIndexConstructor;
 import edu.purdue.cs.HSPGiST.MapReduceJobs.LocalIndexConstructor;
 import edu.purdue.cs.HSPGiST.MapReduceJobs.RandomSample;
+import edu.purdue.cs.HSPGiST.MapReduceJobs.TreeSearcher;
 import edu.purdue.cs.HSPGiST.SupportClasses.*;
 import edu.purdue.cs.HSPGiST.Tests.GlobalBinaryReader;
 
@@ -42,19 +43,19 @@ public class CommandInterpreter {
 	public static void main(String args[]) throws Exception {
 		// Determines the operation to run
 		// DO NOT MODIFY
+		HSPIndex index;
+		StringBuilder sb = null;
 		switch (args[0]) {
 		case "build":
-			HSPIndex index;
 			Parser parse;
 			LocalIndexConstructor construct = null;
 			GlobalIndexConstructor finish = null;
 			RandomSample sampler = null;
-			StringBuilder sb = null;
 			// This switch statement determines the parser
 			// Add cases for your parsers to add them
 			switch (args[2]) {
 			case "OSM":
-				index = makeIndex(args[1], new LongWritable());
+				index = makeIndex(args[1], new CopyWritableLong());
 				parse = new OSMParser();
 				sampler = new RandomSample<Object, Text, WritablePoint, Text>(
 						parse, index);
@@ -67,11 +68,12 @@ public class CommandInterpreter {
 						.append("-").append(args[3]).toString();
 				break;
 			case "BasicTrie":
-				index = makeIndex(args[1], new LongWritable());
+				index = makeIndex(args[1], new CopyWritableLong());
 				parse = new BasicTrieParser();
-				sampler = new RandomSample<Object, Text, WritableString, Text>(parse, index);
-				construct = new LocalIndexConstructor<Object, Text, WritableString, CopyWritableLong, WritableChar>
-						(parse, index);
+				sampler = new RandomSample<Object, Text, WritableString, Text>(
+						parse, index);
+				construct = new LocalIndexConstructor<Object, Text, WritableString, CopyWritableLong, WritableChar>(
+						parse, index);
 				finish = new GlobalIndexConstructor(index, parse);
 				sb = new StringBuilder("-");
 				postScript = sb.append(parse.getClass().getSimpleName())
@@ -96,6 +98,32 @@ public class CommandInterpreter {
 			}
 			ToolRunner.run(finish, args);
 			System.exit(ToolRunner.run(new GlobalBinaryReader(), args));
+			break;
+		case "query":
+			index = null;
+			sb = null;
+			TreeSearcher search = null;
+			switch (args[2]) {
+			case "OSM":
+				index = makeIndex(args[1], new CopyWritableLong());
+				parse = new OSMParser();
+				search = new TreeSearcher<WritableRectangle, WritablePoint, CopyWritableLong>(new WritablePoint(-619, -473), new WritablePoint(713,249), index);
+				sb = new StringBuilder("-");
+				postScript = sb.append(parse.getClass().getSimpleName())
+						.append("-").append(index.getClass().getSimpleName())
+						.append("-").append(args[3]).toString();
+				break;
+			case "BasicTrie":
+				index = makeIndex(args[1], new LongWritable());
+				parse = new BasicTrieParser();
+				search = new TreeSearcher<WritableChar, WritableString, CopyWritableLong>(new WritableString("Ant-"), new WritableString("Elephant-"), index);
+				sb = new StringBuilder("-");
+				postScript = sb.append(parse.getClass().getSimpleName())
+						.append("-").append(index.getClass().getSimpleName())
+						.append("-").append(args[3]).toString();
+				break;
+			}
+			System.exit(ToolRunner.run(search, args));
 		}
 	}
 

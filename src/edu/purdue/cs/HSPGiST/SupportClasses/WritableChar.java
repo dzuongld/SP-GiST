@@ -13,7 +13,7 @@ import edu.purdue.cs.HSPGiST.SupportClasses.Copyable;
  * @author Dan Fortney and Stefan Brinton
  *
  */
-public class WritableChar implements WritableComparable<WritableChar>, Copyable<WritableChar>{
+public class WritableChar implements WritableComparable<WritableChar>, Copyable<WritableChar>, Sized{
 	private char ch;
 	public WritableChar() {}
 
@@ -61,5 +61,10 @@ public class WritableChar implements WritableComparable<WritableChar>, Copyable<
 	}
 	public WritableChar copy(){
 		return clone();
+	}
+
+	@Override
+	public long getSize() {
+		return 2;
 	}
 }

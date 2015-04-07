@@ -189,7 +189,7 @@ public class HSPIndexNode<T, K, R> extends HSPNode<T, K, R> implements
 
 	@Override
 	public String toString() {
-		if (this.children == null || this.children.size() == 0)
+		if ((this.children == null || this.children.size() == 0) && this.predicate == null)
 			return "";
 		if (this.parent == null && this.predicate == null) {
 			return "Root Node";
@@ -206,11 +206,7 @@ public class HSPIndexNode<T, K, R> extends HSPNode<T, K, R> implements
 	@SuppressWarnings("unchecked")
 	@Override
 	public void readFields(DataInput arg0) throws IOException {
-		int size = arg0.readInt();
-		for (int i = 0; i < size; i++) {
-			// populate node with dummy children to get right size
-			this.children.add(new HSPIndexNode<T, K, R>(this, (T) null));
-		}
+		size = arg0.readLong();
 		// Read name of predicate class to create this Index Node's predicate
 		String temp = arg0.readUTF();
 		try {
@@ -223,15 +219,20 @@ public class HSPIndexNode<T, K, R> extends HSPNode<T, K, R> implements
 			// Additionally catches "null" class
 			this.predicate = null;
 		}
+		setOffset(arg0.readInt());
+		int size = arg0.readInt();
+		for (int i = 0; i < size; i++) {
+			// populate node with dummy children to get right size
+			this.children.add(new HSPIndexNode<T, K, R>(this, (T) null));
+		}
+		
 	}
 
 	@SuppressWarnings("unchecked")
 	@Override
 	public void write(DataOutput arg0) throws IOException {
-		if (this.children != null)
-			arg0.writeInt(this.children.size());
-		else
-			arg0.writeInt(0);
+		arg0.writeBoolean(true);
+		arg0.writeLong(size);
 		if (this.predicate == null)
 			arg0.writeUTF("null");
 		else {
@@ -240,10 +241,33 @@ public class HSPIndexNode<T, K, R> extends HSPNode<T, K, R> implements
 			arg0.writeUTF(this.predicate.getClass().getName());
 			((WritableComparable<T>) this.predicate).write(arg0);
 		}
+		arg0.writeInt(getOffset());
+		if (this.children != null)
+			arg0.writeInt(this.children.size());
+		else
+			arg0.writeInt(0);
 	}
 
 	@Override
 	public HSPNode<T, K, R> copy() {
 		return new HSPIndexNode<T, K, R>(parent, this.predicate, this.children);
+	}
+
+	@Override
+	public long getSize() {
+		for(HSPNode<T,K,R> node : children)
+			size += node.getSize();
+		size += Integer.SIZE>>3;
+		long selfSize = (Integer.SIZE>>3) + (Long.SIZE>>3) + 1;
+		if(predicate == null)
+			selfSize += 6; //UTF outputs 2 bytes for length of string then the string is 4 bytes
+		else{
+			//2 for UTF output length, length of UTF string, and the predicate's size
+			String str = predicate.getClass().getName();
+			int len = str.length();
+			long size = ((Sized)predicate).getSize();
+			selfSize += 2 + len + size;
+		}
+		return size + selfSize;
 	}
 }

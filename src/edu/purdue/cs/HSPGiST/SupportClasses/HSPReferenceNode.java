@@ -139,6 +139,7 @@ public class HSPReferenceNode<T, K, R> extends HSPNode<T, K, R> implements
 	@SuppressWarnings("unchecked")
 	@Override
 	public void readFields(DataInput arg0) throws IOException {
+		size = arg0.readLong();
 		String temp = arg0.readUTF();
 		// Read the class name to initialize this node's predicate
 		try {
@@ -158,6 +159,8 @@ public class HSPReferenceNode<T, K, R> extends HSPNode<T, K, R> implements
 	@Override
 	public void write(DataOutput arg0) throws IOException {
 		// Write class name or null for read back
+		arg0.writeBoolean(false);
+		arg0.writeLong(size);
 		if (predicate == null)
 			arg0.writeUTF("null");
 		else {
@@ -170,5 +173,17 @@ public class HSPReferenceNode<T, K, R> extends HSPNode<T, K, R> implements
 	@Override
 	public HSPNode<T, K, R> copy() {
 		return new HSPReferenceNode<T, K, R>(parent, predicate, reference);
+	}
+
+	@Override
+	public long getSize() {
+		size = reference.toString().length() + 2;
+		long selfSize = (Long.SIZE>>3) + 1;
+		if(predicate == null)
+			selfSize += 6; //UTF outputs 2 bytes for length of string then the string is 4 bytes
+		else
+			//2 for UTF output length, length of UTF string, and the predicate's size
+			selfSize += 2 +(predicate.getClass().getName().length() + ((Sized)predicate).getSize());
+		return size + selfSize;
 	}
 }

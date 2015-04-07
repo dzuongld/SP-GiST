@@ -268,8 +268,6 @@ public abstract class HSPIndex<T, K, R> {
 			}
 		}
 		if (curr instanceof HSPIndexNode<?, ?, ?>) {
-			// TODO: The implementation of tree shrink should be right here
-			// But I have the nariest a clue as to how to implement it
 			HSPIndexNode<T, K, R> ind = ((HSPIndexNode<T, K, R>) curr);
 			int index = -1;
 			for (int i = 0; i < ind.getChildren().size(); i++) {
