@@ -1,4 +1,4 @@
-package edu.purdue.cs.HSPGiST.MapReduceJobs;
+package edu.purdue.cs.HSPGiST.Tasks;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -14,7 +14,6 @@ import org.apache.hadoop.mapreduce.Reducer;
 import org.apache.hadoop.mapreduce.lib.input.FileInputFormat;
 import org.apache.hadoop.mapreduce.lib.input.TextInputFormat;
 import org.apache.hadoop.mapreduce.lib.output.FileOutputFormat;
-import org.apache.hadoop.mapreduce.lib.output.SequenceFileOutputFormat;
 //import org.apache.hadoop.mapreduce.lib.output.TextOutputFormat;
 import org.apache.hadoop.util.Tool;
 
@@ -99,7 +98,7 @@ public class LocalIndexConstructor<MKIn, MVIn, MKOut, MVOut, Pred> extends
 		if (numOfReduce - 1 % index.numSpaceParts - 1 == 0)
 			numOfReduce = ((numOfReduce - 1) / (index.numSpaceParts - 1) + 1)
 					* (index.numSpaceParts - 1) + 1;
-		job.setNumReduceTasks(22);
+		job.setNumReduceTasks(numOfReduce);
 		boolean succ = job.waitForCompletion(true);
 		if (!succ) {
 			FileSystem fs = FileSystem.get(getConf());
@@ -243,11 +242,7 @@ public class LocalIndexConstructor<MKIn, MVIn, MKOut, MVOut, Pred> extends
 				InterruptedException {
 			// Call getSize() this call will set the sizes of all nodes in the
 			// tree once
-			// We save dynamic updates to size which would be costly versus a
-			// single mass update
-			System.out.println(System.currentTimeMillis());
 			root.getSize();
-			System.out.println(System.currentTimeMillis());
 			root.setOffset(depth);
 			/*
 			 * Output the nodes in pre-order
@@ -258,7 +253,12 @@ public class LocalIndexConstructor<MKIn, MVIn, MKOut, MVOut, Pred> extends
 				if (node != null) {
 					if (node instanceof HSPIndexNode<?, ?, ?>) {
 						HSPIndexNode<Pred, MKOut, MVOut> temp = (HSPIndexNode<Pred, MKOut, MVOut>) node;
-						if(local.path == HSPIndex.PathShrink.TREE && temp.getChildren().size() == 1){
+						if (local.path == HSPIndex.PathShrink.TREE
+								&& temp.getChildren().size() == 1) {
+							// For any index node with a single child in a TREE
+							// shrink
+							// Remove it from output increment its child's
+							// offset and give the child its predicate
 							node = temp.getChildren().get(0);
 							node.setOffset(node.getOffset() + 1);
 							node.setPredicate(temp.getPredicate());

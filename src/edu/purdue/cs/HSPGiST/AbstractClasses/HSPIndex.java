@@ -118,6 +118,15 @@ public abstract class HSPIndex<T, K, R> {
 	 *         predicate e
 	 */
 	public abstract boolean range(T e, K k1, K k2, int level);
+	
+	/**
+	 * This method checks if a given key lies within the range of two other keys
+	 * @param check The key to be checked
+	 * @param key1 The lower bound of the range
+	 * @param key2 The upper bound of the range
+	 * @return true if the key is in between the two bounds
+	 */
+	public abstract boolean range(K check, K key1, K key2);
 
 	/**
 	 * Governs splitting of an overfull leaf into numSpaceParts leaves also
@@ -174,7 +183,9 @@ public abstract class HSPIndex<T, K, R> {
 	 */
 	public int partition(K key, R record, int numOfReducers) {
 		HSPNode<T, K, R> curr = globalRoot;
-		int dep = 1;
+		int dep = 2;
+		//Traverse the global tree using consistent to find the reference node
+		//that corresponds to the local tree the key belongs to
 		while (true) {
 			for (HSPNode<T, K, R> child : ((HSPIndexNode<T, K, R>) curr)
 					.getChildren()) {
@@ -191,7 +202,7 @@ public abstract class HSPIndex<T, K, R> {
 	}
 
 	/**
-	 * Used by LocalReducer to get its roots predicate and depth
+	 * Used by LocalReducer to get its root's predicate and depth
 	 * 
 	 * @param key
 	 *            The key being partitioned
@@ -236,10 +247,14 @@ public abstract class HSPIndex<T, K, R> {
 	 */
 	public HSPNode<T, K, R> insert(HSPNode<T, K, R> root, K key, R record,
 			int level) {
+		//We start at the root
 		HSPNode<T, K, R> curr = root;
 		if (path == PathShrink.NEVER) {
-			for (; level < resolution; level++) {
+			//With NEVER we will create as many index nodes as resolution-1
+			for (; level < resolution-1; level++) {
 				int index = -1;
+				//Start by seeing if the next node on the path to the "absolute path"
+				//already exists
 				HSPIndexNode<T, K, R> ind = ((HSPIndexNode<T, K, R>) curr);
 				for (int i = 0; i < ind.getChildren().size(); i++) {
 					if (consistent(ind.getChildren().get(i), key, level + 1)) {
@@ -248,6 +263,7 @@ public abstract class HSPIndex<T, K, R> {
 					}
 				}
 				if (index == -1) {
+					//If not create the next node on the path
 					ind.getChildren().add(
 							new HSPIndexNode<T, K, R>(ind, determinePredicate(
 									key, ind.getPredicate(), level + 1)));
@@ -264,11 +280,15 @@ public abstract class HSPIndex<T, K, R> {
 						ind.getChildren().set(index, replace);
 					}
 				}
+				//Setup for the next iteration
 				curr = ind.getChildren().get(index);
 			}
+			//We should now have curr being an index node at depth = resolution-1
 		}
 		if (curr instanceof HSPIndexNode<?, ?, ?>) {
+			//Cast for ease of use
 			HSPIndexNode<T, K, R> ind = ((HSPIndexNode<T, K, R>) curr);
+			//Check if this node has a child that is consistent with this key
 			int index = -1;
 			for (int i = 0; i < ind.getChildren().size(); i++) {
 				if (consistent(ind.getChildren().get(i), key, level)) {
@@ -277,11 +297,13 @@ public abstract class HSPIndex<T, K, R> {
 				}
 			}
 			if (index == -1) {
+				//There were no consistent children so make one
 				ind.getChildren().add(
 						new HSPLeafNode<T, K, R>(ind, determinePredicate(key,
 								ind.getPredicate(), level + 1)));
 				index = ind.getChildren().size() - 1;
 			}
+			//Now try to insert on the consistent child
 			insert(ind.getChildren().get(index), key, record, level + 1);
 			return root;
 		}
@@ -293,6 +315,7 @@ public abstract class HSPIndex<T, K, R> {
 			leaf.getKeyRecords().add(new Pair<K, R>(key, record));
 			boolean overfull;
 			while (true) {
+				//Setup the return structures for picksplit
 				ArrayList<ArrayList<Pair<K, R>>> keysets = new ArrayList<ArrayList<Pair<K, R>>>();
 				for (int i = 0; i < numSpaceParts; i++) {
 					keysets.add(new ArrayList<Pair<K, R>>());
@@ -300,8 +323,11 @@ public abstract class HSPIndex<T, K, R> {
 				ArrayList<T> preds = new ArrayList<T>();
 				HSPIndexNode<T, K, R> replace;
 				overfull = picksplit(leaf, level, keysets, preds);
+				//Create an index version of the leaf being split
 				replace = new HSPIndexNode<T, K, R>(leaf.getParent(),
 						leaf.getPredicate());
+				//Assign the keysets to the children of replace and
+				//add them as its children
 				for (int i = 0; i < keysets.size(); i++) {
 					if (keysets.get(i).size() != 0 || nodeShrink == false) {
 						replace.getChildren().add(
@@ -310,10 +336,10 @@ public abstract class HSPIndex<T, K, R> {
 					}
 				}
 				if (leaf.getParent() != null) {
+					//Update the parent's reference from the original leaf
+					//to replace
 					int index = ((HSPIndexNode<T, K, R>) leaf.getParent())
 							.getChildren().indexOf(leaf);
-					// Replace the leaf version with the index version in its
-					// parent
 					((HSPIndexNode<T, K, R>) leaf.getParent()).getChildren()
 							.set(index, replace);
 				}
@@ -322,6 +348,7 @@ public abstract class HSPIndex<T, K, R> {
 					retVal = replace;
 				if (overfull) {
 					// only one child can be overfull on a decomposition
+					//find it for splitting
 					for (int i = 0; i < replace.getChildren().size(); i++)
 						if (((HSPLeafNode<T, K, R>) replace.getChildren()
 								.get(i)).getKeyRecords().size() > numSpaceParts) {
@@ -334,6 +361,7 @@ public abstract class HSPIndex<T, K, R> {
 				}
 			}
 		} else if (leaf.getKeyRecords().size() < blocksize) {
+			//Just add the key and record
 			leaf.getKeyRecords().add(new Pair<K, R>(key, record));
 			return leaf;
 		}
@@ -345,7 +373,7 @@ public abstract class HSPIndex<T, K, R> {
 	 */
 
 	/**
-	 * Setups of the global root with the given predicates for its children
+	 * Sets up the global root with the given predicates for its children
 	 * 
 	 * @param preds
 	 *            The predicates for the global root's children
@@ -356,6 +384,8 @@ public abstract class HSPIndex<T, K, R> {
 	protected ArrayList<Pair<HSPLeafNode<T, K, R>, Integer>> initializeGlobalRoot(
 			ArrayList<T> preds) {
 		ArrayList<Pair<HSPLeafNode<T, K, R>, Integer>> lowNodes = new ArrayList<Pair<HSPLeafNode<T, K, R>, Integer>>();
+		//For each predicate construct a leaf node and assign it the keys consistent with it
+		//Add the node and its depth to the return structure
 		for (int i = 0; i < preds.size(); i++) {
 			HSPLeafNode<T, K, R> temp = new HSPLeafNode<T, K, R>(globalRoot,
 					preds.get(i));
@@ -366,6 +396,7 @@ public abstract class HSPIndex<T, K, R> {
 			}
 			lowNodes.add(new Pair<HSPLeafNode<T, K, R>, Integer>(temp, 2));
 		}
+		//Add the children to the globalRoot
 		for (Pair<HSPLeafNode<T, K, R>, Integer> pair : lowNodes)
 			globalRoot.getChildren().add(pair.getFirst());
 		return lowNodes;
@@ -373,7 +404,7 @@ public abstract class HSPIndex<T, K, R> {
 
 	/**
 	 * Takes the given leaf node and converts it to an index node with leaf node
-	 * children with the given predicates and the keys of the original leaf with
+	 * children with the given predicates and the keys of the original leaf will
 	 * be distributed to its index form's children by consistent
 	 * 
 	 * @param toSplit
@@ -386,15 +417,18 @@ public abstract class HSPIndex<T, K, R> {
 	protected ArrayList<Pair<HSPLeafNode<T, K, R>, Integer>> splitAndUpdate(
 			Pair<HSPLeafNode<T, K, R>, Integer> toSplit, ArrayList<T> preds) {
 		ArrayList<Pair<HSPLeafNode<T, K, R>, Integer>> lowNodes = new ArrayList<Pair<HSPLeafNode<T, K, R>, Integer>>();
-		HSPIndexNode<T, K, R> parent = new HSPIndexNode<T, K, R>(
+		//Create index version of leaf node
+		HSPIndexNode<T, K, R> indexed = new HSPIndexNode<T, K, R>(
 				toSplit.getFirst().parent, toSplit.getFirst().predicate);
-		if (parent.parent != null) {
-			((HSPIndexNode<T, K, R>) parent.parent).getChildren().remove(
+		//Update references with parent if applicable
+		if (indexed.parent != null) {
+			int index = ((HSPIndexNode<T, K, R>) indexed.parent).getChildren().indexOf(
 					toSplit.getFirst());
-			((HSPIndexNode<T, K, R>) parent.parent).getChildren().add(parent);
+			((HSPIndexNode<T, K, R>) indexed.parent).getChildren().set(index, indexed);
 		}
+		//Create the children of indexed and split the original leaf's keys amongst them
 		for (int i = 0; i < preds.size(); i++) {
-			HSPLeafNode<T, K, R> temp = new HSPLeafNode<T, K, R>(parent,
+			HSPLeafNode<T, K, R> temp = new HSPLeafNode<T, K, R>(indexed,
 					preds.get(i));
 			for (int j = 0; j < toSplit.getFirst().getKeyRecords().size(); j++) {
 				if (consistent(temp, toSplit.getFirst().getKeyRecords().get(j)
@@ -406,7 +440,7 @@ public abstract class HSPIndex<T, K, R> {
 					.getSecond() + 1));
 		}
 		for (Pair<HSPLeafNode<T, K, R>, Integer> pair : lowNodes)
-			parent.getChildren().add(pair.getFirst());
+			indexed.getChildren().add(pair.getFirst());
 		return lowNodes;
 	}
 
@@ -429,10 +463,9 @@ public abstract class HSPIndex<T, K, R> {
 					temp.parent, temp.predicate, new Path(String.format(
 							"part-r-%05d", i)));
 			if (temp.parent != null) {
-				((HSPIndexNode<T, K, R>) temp.parent).getChildren().remove(
+				int index = ((HSPIndexNode<T, K, R>) temp.parent).getChildren().indexOf(
 						toRefs.get(i).getFirst());
-				((HSPIndexNode<T, K, R>) temp.parent).getChildren().add(ref);
-
+				((HSPIndexNode<T, K, R>) temp.parent).getChildren().set(index, ref);
 			}
 		}
 	}

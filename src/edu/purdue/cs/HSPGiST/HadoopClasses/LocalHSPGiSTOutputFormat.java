@@ -28,6 +28,14 @@ import org.apache.hadoop.mapreduce.lib.output.SequenceFileOutputFormat;
 
 import edu.purdue.cs.HSPGiST.HadoopClasses.NullableSequenceFile.Writer;
 
+/**
+ * Partial implementation of an OutputFormat based on SequenceFileOutputFormat to
+ * allow for null values to be "written" to output as 0 bytes
+ * @author Stefan Brinton
+ *
+ * @param <K>
+ * @param <V>
+ */
 public class LocalHSPGiSTOutputFormat<K, V> extends SequenceFileOutputFormat<K, V> {
 
 	protected edu.purdue.cs.HSPGiST.HadoopClasses.NullableSequenceFile.Writer getWriter(TaskAttemptContext context,

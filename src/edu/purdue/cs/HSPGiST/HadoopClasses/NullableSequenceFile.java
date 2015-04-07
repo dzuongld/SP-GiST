@@ -39,6 +39,19 @@ import org.apache.hadoop.io.serializer.Serializer;
 import org.apache.hadoop.util.Options;
 import org.apache.hadoop.util.Progressable;
 
+/**
+ * Implementation of a Writer that will accept null keys or values
+ * based on SequenceFile and its writer
+ * <br>
+ * Since our output will never be compressed all compression code has been stripped out
+ * additionally we want the output to be clean of any irregularities so that we may
+ * seek-skip sections of output if they are irrelevant so syncing has been removed
+ * as well
+ * <br>
+ * Therefore output is not readable by a mapReduce job
+ * @author stefan
+ *
+ */
 public class NullableSequenceFile {
 
 	/**
@@ -162,6 +175,7 @@ public class NullableSequenceFile {
 		}
 	}
 
+	@SuppressWarnings("rawtypes")
 	public static Writer createWriter(Configuration conf, Path name,
 			Class key, Class val) throws IOException {
 		return new Writer(conf, Writer.file(name), Writer.keyClass(key),
@@ -174,14 +188,19 @@ public class NullableSequenceFile {
 		FSDataOutputStream out;
 		DataOutputBuffer buffer = new DataOutputBuffer();
 
+		@SuppressWarnings("rawtypes")
 		Class keyClass;
+		@SuppressWarnings("rawtypes")
 		Class valClass;
 
 		DataOutputStream deflateOut = null;
 		Metadata metadata = null;
 
+		@SuppressWarnings("rawtypes")
 		protected Serializer keySerializer;
+		@SuppressWarnings("rawtypes")
 		protected Serializer uncompressedValSerializer;
+		@SuppressWarnings("rawtypes")
 		protected Serializer compressedValSerializer;
 
 		public static interface Option {
@@ -258,7 +277,7 @@ public class NullableSequenceFile {
 		}
 
 		/** Initialize. */
-		@SuppressWarnings("unchecked")
+		@SuppressWarnings({ "unchecked", "rawtypes" })
 		void init(Configuration conf, FSDataOutputStream out, Class keyClass,
 				Class valClass, Metadata metadata) throws IOException {
 			this.conf = conf;

@@ -1,4 +1,4 @@
-package edu.purdue.cs.HSPGiST.MapReduceJobs;
+package edu.purdue.cs.HSPGiST.Tasks;
 
 import java.util.ArrayList;
 
@@ -14,7 +14,6 @@ import org.apache.hadoop.util.Tool;
 import edu.purdue.cs.HSPGiST.AbstractClasses.HSPIndex;
 import edu.purdue.cs.HSPGiST.SupportClasses.HSPIndexNode;
 import edu.purdue.cs.HSPGiST.SupportClasses.HSPLeafNode;
-import edu.purdue.cs.HSPGiST.SupportClasses.HSPReferenceNode;
 import edu.purdue.cs.HSPGiST.SupportClasses.Pair;
 import edu.purdue.cs.HSPGiST.UserDefinedSection.CommandInterpreter;
 
@@ -30,6 +29,7 @@ public class TreeSearcher<T, K, R> extends Configured implements Tool {
 		this.ind = ind;
 	}
 
+	@SuppressWarnings("unchecked")
 	@Override
 	public int run(String[] args) throws Exception {
 		FileSystem hdfs = FileSystem.get(new Configuration());
@@ -49,24 +49,26 @@ public class TreeSearcher<T, K, R> extends Configured implements Tool {
 		ArrayList<HSPIndexNode<T, K, R>> stack = new ArrayList<HSPIndexNode<T, K, R>>();
 		ArrayList<String> refs = new ArrayList<String>();
 		HSPIndexNode<T, K, R> curr = new HSPIndexNode<T, K, R>();
-		if (input.readBoolean()) {
-			inIndex = new HSPIndexNode<T, K, R>();
-			inIndex.readFields(input);
-			curr = (HSPIndexNode<T, K, R>) inIndex.copy();
-		} else {
-			HSPReferenceNode<T, K, R> inRef = new HSPReferenceNode<T, K, R>();
-			inRef.readFields(input);
-			refs.add(inRef.getReference().toString());
-		}
-
+		//The GlobalRoot is an index node so just read the sentinel and move on
+		input.readBoolean();
+		inIndex = new HSPIndexNode<T, K, R>();
+		inIndex.readFields(input);
+		curr = (HSPIndexNode<T, K, R>) inIndex.copy();
 		int level = 2;
 		while (stack.size() != 0 || curr.getChildren().size() != 0) {
+			//If the current node has no more children
+			//get the next node of the stack and continue in case
+			//it too has run out of children this continue will
+			//also catch when the stack is empty and we have an empty
+			//index with the while condition
 			if (curr.getChildren().size() == 0) {
 				curr = stack.remove(stack.size() - 1);
 				level--;
 				continue;
 			}
+			//we are processing one of curr's children so remove a dummy child
 			curr.getChildren().remove(0);
+			//The next fields are universal to all nodes
 			boolean type = input.readBoolean();
 			long size = input.readLong();
 			T obj = null;
@@ -79,7 +81,10 @@ public class TreeSearcher<T, K, R> extends Configured implements Tool {
 			}
 
 			if (ind.range(obj, key1, key2, level + 1)) {
+				//We are consistent so read in the node
 				if (type) {
+					//Index node reader
+					//Offset is unimportant in the global tree
 					input.readInt();
 					inIndex = new HSPIndexNode<T, K, R>();
 					int count = input.readInt();
@@ -96,19 +101,24 @@ public class TreeSearcher<T, K, R> extends Configured implements Tool {
 					refs.add(input.readUTF());
 				}
 			} else {
+				//Catch the offset as it doesn't get written for reference nodes
 				if (type)
 					size += Integer.SIZE >> 3;
 				input.seek(input.getPos() + size);
 			}
 
 		}
+		//Handle consisten local trees
 		HSPLeafNode<T, K, R> inLeaf = null;
 		for (String ref : refs) {
 			sb = new StringBuilder(CommandInterpreter.CONSTRUCTFIRSTOUT);
 
+			//open a local tree
 			Path local = new Path(sb.append(CommandInterpreter.postScript)
 					.append("/").append(ref).toString());
 			input = hdfs.open(local);
+			
+			//get back its first node
 			curr = new HSPIndexNode<T, K, R>();
 			if (input.readBoolean()) {
 				inIndex = new HSPIndexNode<T, K, R>();
@@ -118,7 +128,10 @@ public class TreeSearcher<T, K, R> extends Configured implements Tool {
 				inLeaf = new HSPLeafNode<T, K, R>();
 				inLeaf.readFields(input);
 			}
+			
+			//clear the stack
 			stack.clear();
+			//set our level as 1 below the root's (kept in offset)
 			level = curr.getOffset() + 1;
 			while (stack.size() != 0 || curr.getChildren().size() != 0) {
 				if (curr.getChildren().size() == 0) {
@@ -140,7 +153,7 @@ public class TreeSearcher<T, K, R> extends Configured implements Tool {
 				}
 				int offset = input.readInt();
 
-				if (ind.range(obj, key1, key2, level + 1 + offset)) {
+				if (ind.range(obj, key1, key2, level + 1)) {
 					if (type) {
 						inIndex = new HSPIndexNode<T, K, R>();
 						inIndex.setOffset(offset);
@@ -161,7 +174,8 @@ public class TreeSearcher<T, K, R> extends Configured implements Tool {
 						for (int i = 0; i < count; i++) {
 							Pair<K, R> data = new Pair<K, R>();
 							data.readFields(input);
-							output.writeBytes(data.toString() + "\n");
+							if(ind.range(data.getFirst(), key1, key2))
+								output.writeBytes(data.toString() + "\n");
 						}
 					}
 				} else {
@@ -174,6 +188,7 @@ public class TreeSearcher<T, K, R> extends Configured implements Tool {
 		}
 		output.close();
 		hdfs.close();
+		System.out.println(System.currentTimeMillis());
 		return 0;
 	}
 

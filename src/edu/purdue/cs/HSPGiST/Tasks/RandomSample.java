@@ -1,4 +1,4 @@
-package edu.purdue.cs.HSPGiST.MapReduceJobs;
+package edu.purdue.cs.HSPGiST.Tasks;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -46,9 +46,13 @@ public class RandomSample<MKIn, MVIn, MKOut, MVOut> extends Configured
 	public static class Map<MKIn, MVIn, MKOut, MVOut> extends
 			Mapper<MKIn, MVIn, MKOut, MVOut> {
 		private Random rand;
-
+		private double percent;
 		public void setup(Context context) {
 			rand = new Random();
+			percent = context.getConfiguration().getDouble("mapreduce.mapper.sample-percentage", .01);
+			if(percent > 1){
+				percent = percent/100;
+			}
 		}
 
 		@SuppressWarnings({ "rawtypes", "unchecked" })
@@ -60,12 +64,12 @@ public class RandomSample<MKIn, MVIn, MKOut, MVOut> extends Configured
 				Pair<MKOut, MVOut> pair = null;
 				for (int i = 0; i < list.size(); i++) {
 					pair = list.get(i);
-					if (rand.nextDouble() < 0.1)
+					if (rand.nextDouble() < percent)
 						index.samples.add(((Copyable) pair.getFirst()).copy());
 				}
 			} else {
 				Pair<MKOut, MVOut> pair = parse.parse(key, value);
-				if (rand.nextDouble() < 0.1)
+				if (rand.nextDouble() < percent)
 					index.samples.add(((Copyable) pair.getFirst()).copy());
 			}
 		}
@@ -74,7 +78,7 @@ public class RandomSample<MKIn, MVIn, MKOut, MVOut> extends Configured
 	@Override
 	public int run(String[] args) throws Exception {
 		Configuration conf = new Configuration();
-
+		conf.set("mapreduce.mapper.sample-percentage", args[4]);
 		Job job = Job.getInstance(conf, "Random_Sample");
 		job.setJarByClass(RandomSample.class);
 
@@ -82,7 +86,6 @@ public class RandomSample<MKIn, MVIn, MKOut, MVOut> extends Configured
 		job.setOutputValueClass(parse.valout);
 		job.setInputFormatClass(TextInputFormat.class);
 		job.setOutputFormatClass(TextOutputFormat.class);
-
 		job.setNumReduceTasks(0);
 		job.setMapperClass(Map.class);
 		FileInputFormat.addInputPath(job, new Path(args[3]));

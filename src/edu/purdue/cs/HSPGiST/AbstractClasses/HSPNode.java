@@ -18,15 +18,18 @@ public abstract class HSPNode<T, K, R> implements Copyable<HSPNode<T, K, R>> {
 	protected HSPNode<T, K, R> parent;
 	protected T predicate;
 	/**
-	 * The size of this node's subtree excluding itself
-	 * for index nodes<br>
-	 * The size of the node's remaining data following the predicate for
-	 * leaf and reference nodes
+	 * The size of the node's remaining data following the predicate + the size
+	 * of the node's subtree (this only really applies to indexNodes)
 	 */
 	protected long size = 0;
 
+	/**
+	 * This value represents the number of predicates merged into this node
+	 * Used to account for TreeShrink and the root nodes of local trees
+	 * not being at a perceived depth
+	 */
 	private int offset = 0;
-	
+
 	/**
 	 * Predicate setter method
 	 * 
@@ -68,7 +71,8 @@ public abstract class HSPNode<T, K, R> implements Copyable<HSPNode<T, K, R>> {
 	}
 
 	/**
-	 * @param offset the offset to set
+	 * @param offset
+	 *            the offset to set
 	 */
 	public void setOffset(int offset) {
 		this.offset = offset;

@@ -1,4 +1,4 @@
-package edu.purdue.cs.HSPGiST.MapReduceJobs;
+package edu.purdue.cs.HSPGiST.Tasks;
 
 import java.util.ArrayList;
 
@@ -17,7 +17,7 @@ import edu.purdue.cs.HSPGiST.SupportClasses.HSPReferenceNode;
 import edu.purdue.cs.HSPGiST.UserDefinedSection.CommandInterpreter;
 
 /**
- * Not actually a MapReduce Job, this tool just outputs the global tree
+ * This tool just outputs the global tree
  * constructed during Local Index Construction to file
  * 
  * @author Stefan Brinton
@@ -59,17 +59,12 @@ public class GlobalIndexConstructor extends Configured implements Tool {
 			if (nodule != null) {
 				if (nodule instanceof HSPIndexNode<?, ?, ?>) {
 					HSPIndexNode temp = (HSPIndexNode) nodule;
-					// Since this isn't a map-reduce job and won't be read by
-					// one either,
-					// we need to put boolean sentinels to mark if this node is
-					// an index node or a reference node
 					temp.write(output);
 					for (int i = 0; i < temp.getChildren().size(); i++) {
 						stack.add((HSPNode) temp.getChildren().get(i));
 					}
 					nodule = stack.remove(stack.size()-1);
 				} else {
-					//See above comment
 					((HSPReferenceNode) nodule).write(output);
 					nodule = null;
 				}
