@@ -24,7 +24,7 @@ public class CommandInterpreter {
 	/**
 	 * The prefix for the output directory for LocalIndexConstuctor
 	 */
-	public static final String CONSTRUCTFIRSTOUT = "Local";
+	public final static String CONSTRUCTFIRSTOUT = "Local";
 
 	/**
 	 * The prefix for the output directory for GlobalIndexConstructor
@@ -44,6 +44,7 @@ public class CommandInterpreter {
 	public static final String QUSAGE = "Usage for -q or -query:\nHSP-GiST -q(uery) <Index_Name> <Parser_Name> <Input_Directory> <Index_Range>";
 	public static final String QQOSM = "Usage for -q or -query:\nHSP-GiST -q(uery) <Index_Name> <Parser_Name> <Input_Directory> <X Value of Lower Left Corner> <Y Value of Lower Left Corner> <X Value of Upper Right Corner> <Y Value Of Upper Right Corner>";
 	public static final String QTTRIE = "Usage for -q or -query:\nHSP-GiST -q(uery) <Index_Name> <Parser_Name> <Input_Directory> <First String Alphabetically> <Second String Alphabetically>";
+	
 	@SuppressWarnings({ "rawtypes", "unchecked" })
 	public static void main(String args[]) throws Exception {
 		// Determines the operation to run
@@ -72,11 +73,10 @@ public class CommandInterpreter {
 			case "OSM":
 				index = makeIndex(args[1], new CopyWritableLong());
 				parse = new OSMParser();
-				sampler = new RandomSample<Object, Text, WritablePoint, Text>(
+				sampler = new RandomSample<Object, Text, WritablePoint, CopyWritableLong>(
 						parse, index);
 				construct = new LocalIndexConstructor<Object, Text, WritablePoint, CopyWritableLong, WritableRectangle>(
 						parse, index);
-				finish = new GlobalIndexConstructor(index, parse);
 				sb = new StringBuilder("-");
 				
 				
@@ -91,7 +91,6 @@ public class CommandInterpreter {
 						parse, index);
 				construct = new LocalIndexConstructor<Object, Text, WritableString, CopyWritableLong, WritableChar>(
 						parse, index);
-				finish = new GlobalIndexConstructor(index, parse);
 				sb = new StringBuilder("-");
 				postScript = sb.append(parse.getClass().getSimpleName())
 						.append("-").append(index.getClass().getSimpleName())
@@ -101,19 +100,14 @@ public class CommandInterpreter {
 			if (construct == null) {
 				System.err
 						.println("Failed to provide a valid parser on build instruction");
-				System.exit(-1);
+				System.exit(1);
 			}
 			int check = ToolRunner.run(sampler, args);
 			if (check == 1) {
 				System.err.println("The Sampler has failed to sample data");
-			}
-			ToolRunner.run(construct, args);
-			if (check == 1) {
-				System.err
-						.println("Local Index Construction has failed\nAborting index construction");
 				System.exit(1);
 			}
-			System.exit(ToolRunner.run(finish, args));
+			System.exit(ToolRunner.run(construct, args));
 			break;
 		case "-q":
 		case "-query":

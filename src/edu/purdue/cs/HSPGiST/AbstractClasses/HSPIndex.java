@@ -3,6 +3,7 @@ package edu.purdue.cs.HSPGiST.AbstractClasses;
 import java.util.ArrayList;
 
 import org.apache.hadoop.fs.Path;
+import org.apache.hadoop.io.IntWritable;
 
 import edu.purdue.cs.HSPGiST.SupportClasses.HSPIndexNode;
 import edu.purdue.cs.HSPGiST.SupportClasses.HSPLeafNode;
@@ -50,7 +51,7 @@ public abstract class HSPIndex<T, K, R> {
 	 * Memoization used to quickly return predicate and depth to reducers in
 	 * "local" index construction
 	 */
-	private ArrayList<Pair<T, Integer>> partRoots = new ArrayList<Pair<T, Integer>>();
+	public ArrayList<Pair<T, IntWritable>> partRoots = new ArrayList<Pair<T, IntWritable>>();
 
 	/**
 	 * PathShrink Enum NEVER - A tree will insert a value at the greatest depth
@@ -199,21 +200,6 @@ public abstract class HSPIndex<T, K, R> {
 			}
 
 		}
-	}
-
-	/**
-	 * Used by LocalReducer to get its root's predicate and depth
-	 * 
-	 * @param key
-	 *            The key being partitioned
-	 * @param record
-	 *            The keys associated record
-	 * @param numOfReducers
-	 *            The number of reducers
-	 * @return The partition the key has been placed in
-	 */
-	public Pair<T, Integer> getPartition(int pNumber) {
-		return partRoots.get(pNumber);
 	}
 
 	/**
@@ -459,8 +445,8 @@ public abstract class HSPIndex<T, K, R> {
 			ArrayList<Pair<HSPLeafNode<T, K, R>, Integer>> toRefs) {
 		for (int i = 0; i < toRefs.size(); i++) {
 			HSPLeafNode<T, K, R> temp = toRefs.get(i).getFirst();
-			partRoots.add(new Pair<T, Integer>(temp.getPredicate(), toRefs.get(
-					i).getSecond()));
+			partRoots.add(new Pair<T, IntWritable>(temp.getPredicate(), new IntWritable(toRefs.get(
+					i).getSecond())));
 			HSPReferenceNode<T, K, R> ref = new HSPReferenceNode<T, K, R>(
 					temp.parent, temp.predicate, new Path(String.format(
 							"part-r-%05d", i)));
@@ -490,7 +476,7 @@ public abstract class HSPIndex<T, K, R> {
 		for (int i = 0; i < preds.size(); i++) {
 			lowNodes.add(new HSPReferenceNode<T, K, R>(globalRoot,
 					preds.get(i), new Path(String.format("part-r-%05d", i))));
-			partRoots.add(new Pair<T, Integer>(preds.get(i), 2));
+			partRoots.add(new Pair<T, IntWritable>(preds.get(i), new IntWritable(2)));
 		}
 		globalRoot.getChildren().addAll(lowNodes);
 	}

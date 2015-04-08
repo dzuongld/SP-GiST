@@ -16,7 +16,7 @@ import edu.purdue.cs.HSPGiST.SupportClasses.WritablePoint;
  */
 public class OSMParser extends Parser<Object, Text, WritablePoint, CopyWritableLong> {
 	
-	OSMParser(){
+	public OSMParser(){
 		keyout = WritablePoint.class;
 		valout = CopyWritableLong.class;
 		isArrayParse = true;

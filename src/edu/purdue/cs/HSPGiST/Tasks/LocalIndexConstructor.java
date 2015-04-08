@@ -3,10 +3,15 @@ package edu.purdue.cs.HSPGiST.Tasks;
 import java.io.IOException;
 import java.util.ArrayList;
 
+import org.apache.hadoop.conf.Configurable;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.conf.Configured;
+import org.apache.hadoop.fs.FSDataInputStream;
+import org.apache.hadoop.fs.FSDataOutputStream;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
+import org.apache.hadoop.io.IntWritable;
+import org.apache.hadoop.io.WritableComparable;
 import org.apache.hadoop.mapreduce.Job;
 import org.apache.hadoop.mapreduce.Mapper;
 import org.apache.hadoop.mapreduce.Partitioner;
@@ -47,21 +52,27 @@ import edu.purdue.cs.HSPGiST.UserDefinedSection.CommandInterpreter;
  */
 public class LocalIndexConstructor<MKIn, MVIn, MKOut, MVOut, Pred> extends
 		Configured implements Tool {
-	static Parser<?, ?, ?, ?> parser = null;
+	Parser<?, ?, ?, ?> parser = null;
 
-	static HSPIndex<?, ?, ?> index = null;
+	HSPIndex<?, ?, ?> index = null;
 
 	public LocalIndexConstructor(Parser<MKIn, MVIn, MKOut, MVOut> parser,
 			HSPIndex<Pred, MKOut, MVOut> index) {
 		super();
-		LocalIndexConstructor.parser = parser;
-		LocalIndexConstructor.index = index;
+		this.parser = parser;
+		this.index = index;
 	}
 
 	@Override
 	public int run(String[] args) throws Exception {
 		// Standardized setup
 		Configuration conf = new Configuration();
+		conf.set("parserClass", parser.getClass().getName());
+		conf.set("indexClass", index.getClass().getName());
+		conf.set("keyoutClass", parser.keyout.getName());
+		conf.set("constructsecondout", CommandInterpreter.CONSTRUCTSECONDOUT);
+		conf.set("postScript", CommandInterpreter.postScript);
+		conf.set("globalfile", CommandInterpreter.GLOBALFILE);
 		Job job = Job.getInstance(conf, "Local-Construction");
 		job.setJarByClass(LocalIndexConstructor.class);
 		// Mapper output is not the same as reducer output
@@ -130,7 +141,15 @@ public class LocalIndexConstructor<MKIn, MVIn, MKOut, MVOut, Pred> extends
 		@SuppressWarnings("unchecked")
 		public void setup(Context context) {
 			// Give each mapper a copy of the parser
-			local = (Parser<MKIn, MVIn, MKOut, MVOut>) parser.clone();
+			Configuration conf = context.getConfiguration();
+			try {
+				local = (Parser) Class.forName(conf.get("parserClass"))
+						.newInstance();
+			} catch (InstantiationException | IllegalAccessException
+					| ClassNotFoundException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
 		}
 
 		public void map(MKIn key, MVIn value, Context context)
@@ -167,11 +186,26 @@ public class LocalIndexConstructor<MKIn, MVIn, MKOut, MVOut, Pred> extends
 	 *            The HSPIndex predicate type
 	 */
 	private static class LocalPartitioner<MKOut, MVOut, Pred> extends
-			Partitioner<MKOut, MVOut> {
+			Partitioner<MKOut, MVOut> implements Configurable {
+		private Configuration conf;
+		static HSPIndex index = null;
+		MKOut key;
 
 		@SuppressWarnings("unchecked")
 		@Override
 		public int getPartition(MKOut key, MVOut value, int numOfReducers) {
+			if (index == null) {
+				try {
+					index = (HSPIndex) Class.forName(conf.get("indexClass"))
+							.newInstance();
+					key = (MKOut) Class.forName(conf.get("keyoutClass"))
+							.newInstance();
+				} catch (InstantiationException | IllegalAccessException
+						| ClassNotFoundException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
+			}
 			if (index.globalRoot.getChildren().size() == 0) {
 				if (numOfReducers == 1) {
 					((HSPIndex<Pred, MKOut, MVOut>) index).globalRoot = new HSPIndexNode<Pred, MKOut, MVOut>();
@@ -180,11 +214,83 @@ public class LocalIndexConstructor<MKIn, MVIn, MKOut, MVOut, Pred> extends
 							.add(new HSPReferenceNode<Pred, MKOut, MVOut>(
 									((HSPIndex<Pred, MKOut, MVOut>) index).globalRoot,
 									null, new Path("part-r-00000")));
-				} else
+				} else {
+					try {
+						FileSystem hdfs = FileSystem.get(getConf());
+						FSDataInputStream in = hdfs.open(new Path(
+								"samp/samples"));
+						int size = in.readInt();
+						for (int i = 0; i < size; i++) {
+							((WritableComparable<MKOut>) key).readFields(in);
+							index.samples.add(key);
+						}
+						in.close();
+						hdfs.delete(new Path("samp/samples"), true);
+					} catch (Exception e) {
+
+					}
 					index.setupPartitions(numOfReducers);
+					try {
+						FileSystem hdfs = FileSystem.get(getConf());
+						StringBuilder sb = new StringBuilder(conf.get("constructsecondout"));
+						Path globalOutput = new Path(sb.append(conf.get("postScript"))
+								.toString());
+						// Clear out pre-existing files if applicable
+						if (hdfs.exists(globalOutput)) {
+							hdfs.delete(globalOutput, true);
+						}
+						hdfs.mkdirs(globalOutput);
+						// Create global output file
+						Path globalIndexFile = new Path(sb.append("/")
+								.append(conf.get("globalfile")).toString());
+						FSDataOutputStream output = hdfs.create(globalIndexFile);
+						// Print nodes in preorder to file
+						HSPNode nodule = index.globalRoot;
+						index.globalRoot.getSize();
+						ArrayList<HSPNode> stack = new ArrayList<HSPNode>();
+						while (!(stack.size() == 0 && nodule == null)) {
+							if (nodule != null) {
+								if (nodule instanceof HSPIndexNode<?, ?, ?>) {
+									HSPIndexNode temp = (HSPIndexNode) nodule;
+									temp.write(output);
+									for (int i = 0; i < temp.getChildren().size(); i++) {
+										stack.add((HSPNode) temp.getChildren().get(i));
+									}
+									nodule = stack.remove(stack.size()-1);
+								} else {
+									((HSPReferenceNode) nodule).write(output);
+									nodule = null;
+								}
+							} else
+								nodule = stack.remove(stack.size()-1);
+						}
+						//Close and return success
+						output.close();
+						output = hdfs.create(new Path("pathPreds/preds"));
+						output.writeInt(index.partRoots.size());
+						for(Pair<Pred, IntWritable> sample : ((ArrayList<Pair<Pred,IntWritable>>)index.partRoots)){
+							((WritableComparable<Pair<Pred, IntWritable>>)sample).write(output);
+						}
+						output.close();
+					} catch (IOException e) {
+						// TODO Auto-generated catch block
+						e.printStackTrace();
+					}
+				}
 			}
 			return ((HSPIndex<Pred, MKOut, MVOut>) index).partition(key, value,
 					numOfReducers);
+		}
+
+		@Override
+		public Configuration getConf() {
+			return conf;
+		}
+
+		@Override
+		public void setConf(Configuration arg0) {
+			conf = arg0;
+
 		}
 
 	}
@@ -217,12 +323,32 @@ public class LocalIndexConstructor<MKIn, MVIn, MKOut, MVOut, Pred> extends
 		public void setup(Context context) {
 			// Get each reducer a reference to the index, setup an empty leaf
 			// root, and set the depth of the root
-			local = (HSPIndex<Pred, MKOut, MVOut>) index;
+			try {
+				local = (HSPIndex) Class.forName(context.getConfiguration().get("indexClass"))
+						.newInstance();
+			} catch (InstantiationException | IllegalAccessException
+					| ClassNotFoundException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
 			int part = context.getConfiguration().getInt(
 					"mapreduce.task.partition", 0);
-			Pair<Pred, Integer> p = local.getPartition(part);
+			Pair<Pred, IntWritable> p = new Pair<Pred,IntWritable>();
+			try {
+				FileSystem hdfs = FileSystem.get(context.getConfiguration());
+				FSDataInputStream in = hdfs.open(new Path(
+						"pathPreds/preds"));
+				int size = in.readInt();
+				p.readFields(in);
+				for (int i = 0; i < part; i++) {
+					p.readFields(in);
+				}
+				in.close();
+			} catch (Exception e) {
+
+			}
 			root = new HSPLeafNode<Pred, MKOut, MVOut>(null, p.getFirst());
-			depth = p.getSecond();
+			depth = p.getSecond().get();
 		}
 
 		@SuppressWarnings("unchecked")

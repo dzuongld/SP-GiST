@@ -46,6 +46,7 @@ public class GlobalBinaryReader extends Configured implements Tool {
 				output.writeBytes(inRef.toString() + "\n");
 			}
 		}
+		input.close();
 		output.close();
 		hdfs.close();
 		return 0;

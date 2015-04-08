@@ -186,6 +186,7 @@ public class TreeSearcher<T, K, R> extends Configured implements Tool {
 			}
 
 		}
+		input.close();
 		output.close();
 		hdfs.close();
 		return 0;
