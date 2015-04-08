@@ -78,7 +78,8 @@ public class RandomSample<MKIn, MVIn, MKOut, MVOut> extends Configured
 	@Override
 	public int run(String[] args) throws Exception {
 		Configuration conf = new Configuration();
-		conf.set("mapreduce.mapper.sample-percentage", args[4]);
+		if(args.length == 5)
+			conf.set("mapreduce.mapper.sample-percentage", args[4]);
 		Job job = Job.getInstance(conf, "Random_Sample");
 		job.setJarByClass(RandomSample.class);
 

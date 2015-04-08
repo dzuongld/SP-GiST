@@ -95,7 +95,7 @@ public class LocalIndexConstructor<MKIn, MVIn, MKOut, MVOut, Pred> extends
 		// set numOfReduce to the first valid number lte a valid number
 		// E.g. Quadtree can only support partitions of size 1+3n for n >= 0
 		// So if numOfReduce == 3 we must increase that to 4
-		if (numOfReduce - 1 % index.numSpaceParts - 1 == 0)
+		if ((numOfReduce - 1) % (index.numSpaceParts - 1) != 0)
 			numOfReduce = ((numOfReduce - 1) / (index.numSpaceParts - 1) + 1)
 					* (index.numSpaceParts - 1) + 1;
 		job.setNumReduceTasks(numOfReduce);

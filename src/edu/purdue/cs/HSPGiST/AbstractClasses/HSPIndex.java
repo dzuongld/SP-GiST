@@ -29,7 +29,7 @@ public abstract class HSPIndex<T, K, R> {
 	public int numSpaceParts;
 
 	// TODO: figure out a reasonable value for this
-	public static final int blocksize = 10;
+	public static final int blocksize = 50;
 
 	/**
 	 * Maximum Number of decompositions allowed
@@ -314,7 +314,7 @@ public abstract class HSPIndex<T, K, R> {
 			// Actually overfill the leaf and then split it
 			leaf.getKeyRecords().add(new Pair<K, R>(key, record));
 			boolean overfull;
-			while (true) {
+			while (level < resolution) {
 				//Setup the return structures for picksplit
 				ArrayList<ArrayList<Pair<K, R>>> keysets = new ArrayList<ArrayList<Pair<K, R>>>();
 				for (int i = 0; i < numSpaceParts; i++) {
@@ -360,6 +360,8 @@ public abstract class HSPIndex<T, K, R> {
 					return retVal;
 				}
 			}
+			if(leaf.getKeyRecords().size() == blocksize)
+				leaf.getKeyRecords().remove(blocksize-1);
 		} else if (leaf.getKeyRecords().size() < blocksize) {
 			//Just add the key and record
 			leaf.getKeyRecords().add(new Pair<K, R>(key, record));

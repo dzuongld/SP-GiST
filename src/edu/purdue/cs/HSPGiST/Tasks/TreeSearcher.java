@@ -41,7 +41,7 @@ public class TreeSearcher<T, K, R> extends Configured implements Tool {
 				.append(CommandInterpreter.GLOBALFILE).toString());
 		FSDataInputStream input = hdfs.open(globalIndexFile);
 		FSDataOutputStream output = hdfs.create(new Path(
-				"BouncingReader/QueryResult.txt"));
+				"Results/QueryResult.txt"));
 
 		// Read Global index to find which local indices to read
 
@@ -188,7 +188,6 @@ public class TreeSearcher<T, K, R> extends Configured implements Tool {
 		}
 		output.close();
 		hdfs.close();
-		System.out.println(System.currentTimeMillis());
 		return 0;
 	}
 

@@ -46,7 +46,6 @@ public class CommandInterpreter {
 	public static final String QTTRIE = "Usage for -q or -query:\nHSP-GiST -q(uery) <Index_Name> <Parser_Name> <Input_Directory> <First String Alphabetically> <Second String Alphabetically>";
 	@SuppressWarnings({ "rawtypes", "unchecked" })
 	public static void main(String args[]) throws Exception {
-		System.out.println(System.currentTimeMillis());
 		// Determines the operation to run
 		// DO NOT MODIFY
 		HSPIndex index = null;
@@ -58,10 +57,11 @@ public class CommandInterpreter {
 		switch (args[0]) {
 		case "-build":
 		case "-b":
-			if(args.length != 4 || args.length != 5){
+			if(args.length != 4 && args.length != 5){
 				System.out.println(BUSAGE);
 				System.exit(1);
 			}
+			String arg[] = args[3].split("/");
 			Parser parse = null;
 			LocalIndexConstructor construct = null;
 			GlobalIndexConstructor finish = null;
@@ -78,9 +78,11 @@ public class CommandInterpreter {
 						parse, index);
 				finish = new GlobalIndexConstructor(index, parse);
 				sb = new StringBuilder("-");
+				
+				
 				postScript = sb.append(parse.getClass().getSimpleName())
 						.append("-").append(index.getClass().getSimpleName())
-						.append("-").append(args[3]).toString();
+						.append("-").append(arg[arg.length-1]).toString();
 				break;
 			case "BasicTrie":
 				index = makeIndex(args[1], new CopyWritableLong());
@@ -93,7 +95,7 @@ public class CommandInterpreter {
 				sb = new StringBuilder("-");
 				postScript = sb.append(parse.getClass().getSimpleName())
 						.append("-").append(index.getClass().getSimpleName())
-						.append("-").append(args[3]).toString();
+						.append("-").append(arg[arg.length-1]).toString();
 				break;
 			}
 			if (construct == null) {
@@ -118,6 +120,7 @@ public class CommandInterpreter {
 			if(args.length < 3){
 				System.out.println(QUSAGE);
 			}
+			String arg1[] = args[3].split("/");
 			index = null;
 			sb = null;
 			TreeSearcher search = null;
@@ -127,9 +130,10 @@ public class CommandInterpreter {
 				index = makeIndex(args[1], new CopyWritableLong());
 				search = makeSearcher(args, index, new CopyWritableLong());
 				sb = new StringBuilder("-");
+				
 				postScript = sb.append(parse.getClass().getSimpleName())
-						.append("-").append(makeIndex(args[1],new CopyWritableLong()).getClass().getSimpleName())
-						.append("-").append(args[3]).toString();
+						.append("-").append(index.getClass().getSimpleName())
+						.append("-").append(arg1[arg1.length-1]).toString();
 				break;
 			case "BasicTrie":
 				index = makeIndex(args[1], new LongWritable());
@@ -138,7 +142,7 @@ public class CommandInterpreter {
 				sb = new StringBuilder("-");
 				postScript = sb.append(parse.getClass().getSimpleName())
 						.append("-").append(index.getClass().getSimpleName())
-						.append("-").append(args[3]).toString();
+						.append("-").append(arg1[arg1.length-1]).toString();
 				break;
 			}
 			System.exit(ToolRunner.run(search, args));

@@ -22,7 +22,8 @@ public class QuadTree<R> extends HSPIndex<WritableRectangle,WritablePoint,R>{
 		path = PathShrink.LEAF;
 		nodeShrink = true;
 	}
-	private static final int RANGE = 1000;
+	private static final int RANGEX = 180;
+	private static final int RANGEY = 90;
 	
 	@Override
 	public boolean picksplit(
@@ -30,10 +31,10 @@ public class QuadTree<R> extends HSPIndex<WritableRectangle,WritablePoint,R>{
 			ArrayList<ArrayList<Pair<WritablePoint, R>>> childrenData,
 			ArrayList<WritableRectangle> childrenPredicates) {
 		if(level == 1){
-			WritableRectangle upperLeft = new WritableRectangle(-RANGE,0,RANGE,RANGE);
-			WritableRectangle upperRight = new WritableRectangle(0,0,RANGE,RANGE);
-			WritableRectangle lowerLeft = new WritableRectangle(-RANGE,-RANGE,RANGE,RANGE);
-			WritableRectangle lowerRight = new WritableRectangle(0,-RANGE,RANGE,RANGE);
+			WritableRectangle upperLeft = new WritableRectangle(-RANGEX,0,RANGEX,RANGEY);
+			WritableRectangle upperRight = new WritableRectangle(0,0,RANGEX,RANGEY);
+			WritableRectangle lowerLeft = new WritableRectangle(-RANGEX,-RANGEY,RANGEX,RANGEY);
+			WritableRectangle lowerRight = new WritableRectangle(0,-RANGEY,RANGEX,RANGEY);
 			childrenPredicates.add(upperLeft);
 			childrenPredicates.add(upperRight);
 			childrenPredicates.add(lowerLeft);
@@ -64,10 +65,10 @@ public class QuadTree<R> extends HSPIndex<WritableRectangle,WritablePoint,R>{
 		double y = predic.getY();
 		double h = predic.getH();
 		double w = predic.getW();
-		WritableRectangle upperLeft = new WritableRectangle(x,y+h/2,h/2,w/2);
-		WritableRectangle upperRight = new WritableRectangle(x+w/2,y+h/2,h/2,w/2);
-		WritableRectangle lowerLeft = new WritableRectangle(x,y,h/2,w/2);
-		WritableRectangle lowerRight = new WritableRectangle(x+w/2,y,h/2,w/2);
+		WritableRectangle upperLeft = new WritableRectangle(x,y+h/2,w/2,h/2);
+		WritableRectangle upperRight = new WritableRectangle(x+w/2,y+h/2,w/2,h/2);
+		WritableRectangle lowerLeft = new WritableRectangle(x,y,w/2,h/2);
+		WritableRectangle lowerRight = new WritableRectangle(x+w/2,y,w/2,h/2);
 		childrenPredicates.add(upperLeft);
 		childrenPredicates.add(upperRight);
 		childrenPredicates.add(lowerLeft);
@@ -101,16 +102,16 @@ public class QuadTree<R> extends HSPIndex<WritableRectangle,WritablePoint,R>{
 			double y = parentPred.getY();
 			double h = parentPred.getH();
 			double w = parentPred.getW();
-			upperLeft = new WritableRectangle(x,y+h/2,h/2,w/2);
-			upperRight = new WritableRectangle(x+w/2,y+h/2,h/2,w/2);
-			lowerLeft = new WritableRectangle(x,y,h/2,w/2);
-			lowerRight = new WritableRectangle(x+w/2,y,h/2,w/2);
+			upperLeft = new WritableRectangle(x,y+h/2,w/2,h/2);
+			upperRight = new WritableRectangle(x+w/2,y+h/2,w/2,h/2);
+			lowerLeft = new WritableRectangle(x,y,w/2,h/2);
+			lowerRight = new WritableRectangle(x+w/2,y,w/2,h/2);
 		}
 		else{
-			upperLeft = new WritableRectangle(-RANGE,0,RANGE,RANGE);
-			upperRight = new WritableRectangle(0,0,RANGE,RANGE);
-			lowerLeft = new WritableRectangle(-RANGE,-RANGE,RANGE,RANGE);
-			lowerRight = new WritableRectangle(0,-RANGE,RANGE,RANGE);
+			upperLeft = new WritableRectangle(-RANGEX,0,RANGEX,RANGEY);
+			upperRight = new WritableRectangle(0,0,RANGEX,RANGEY);
+			lowerLeft = new WritableRectangle(-RANGEX,-RANGEY,RANGEX,RANGEY);
+			lowerRight = new WritableRectangle(0,-RANGEY,RANGEX,RANGEY);
 		}
 		if(upperLeft.contains(key))
 			return upperLeft;
@@ -137,10 +138,10 @@ public class QuadTree<R> extends HSPIndex<WritableRectangle,WritablePoint,R>{
 	@Override
 	public void setupPartitions(int numOfReducers) {
 		int divisions = (numOfReducers - 1)/(numSpaceParts-1);
-		WritableRectangle upperLeft = new WritableRectangle(-RANGE,0,RANGE,RANGE);
-		WritableRectangle upperRight = new WritableRectangle(0,0,RANGE,RANGE);
-		WritableRectangle lowerLeft = new WritableRectangle(-RANGE,-RANGE,RANGE,RANGE);
-		WritableRectangle lowerRight = new WritableRectangle(0,-RANGE,RANGE,RANGE);
+		WritableRectangle upperLeft = new WritableRectangle(-RANGEX,0,RANGEX,RANGEY);
+		WritableRectangle upperRight = new WritableRectangle(0,0,RANGEX,RANGEY);
+		WritableRectangle lowerLeft = new WritableRectangle(-RANGEX,-RANGEY,RANGEX,RANGEY);
+		WritableRectangle lowerRight = new WritableRectangle(0,-RANGEY,RANGEX,RANGEY);
 		ArrayList<WritableRectangle> preds = new ArrayList<WritableRectangle>();
 		if(divisions == 1){
 			preds.add(upperLeft);
@@ -176,10 +177,10 @@ public class QuadTree<R> extends HSPIndex<WritableRectangle,WritablePoint,R>{
 			double y = splitter.getPredicate().getY();
 			double h = splitter.getPredicate().getH();
 			double w = splitter.getPredicate().getW();
-			preds.add(new WritableRectangle(x,y+h/2,h/2,w/2));
-			preds.add(new WritableRectangle(x+w/2,y+h/2,h/2,w/2));
-			preds.add(new WritableRectangle(x,y,h/2,w/2));
-			preds.add(new WritableRectangle(x+w/2,y,h/2,w/2));
+			preds.add(new WritableRectangle(x,y+h/2,w/2,h/2));
+			preds.add(new WritableRectangle(x+w/2,y+h/2,w/2,h/2));
+			preds.add(new WritableRectangle(x,y,w/2,h/2));
+			preds.add(new WritableRectangle(x+w/2,y,w/2,h/2));
 			lowNodes.addAll(j+1,splitAndUpdate(lowNodes.get(j), preds));
 			lowNodes.remove(j);
 			divisions--;
@@ -193,14 +194,14 @@ public class QuadTree<R> extends HSPIndex<WritableRectangle,WritablePoint,R>{
 	@Override
 	public boolean range(WritableRectangle e, WritablePoint k1,
 			WritablePoint k2, int level) {
-		WritableRectangle range = new WritableRectangle(k1.getX(), k1.getY(), k2.getY() - k1.getY(),k2.getX()-k1.getX());
+		WritableRectangle range = new WritableRectangle(k1.getX(), k1.getY(), k2.getX()-k1.getX(),k2.getY() - k1.getY());
 		return range.overlaps(e);
 	}
 
 	@Override
 	public boolean range(WritablePoint check, WritablePoint k1,
 			WritablePoint k2) {
-		return new WritableRectangle(k1.getX(), k1.getY(), k2.getY() - k1.getY(),k2.getX()-k1.getX()).contains(check);
+		return new WritableRectangle(k1.getX(), k1.getY(), k2.getX()-k1.getX(),k2.getY() - k1.getY()).contains(check);
 	}
 
 }

@@ -33,12 +33,12 @@ public class WritableRectangle implements
 	 *            The lower left corner of the rectangle's x value
 	 * @param y
 	 *            The lower left corner of the rectangle's y value
-	 * @param h
-	 *            The height of the rectangle
 	 * @param w
 	 *            The width of the rectangle
+	 * @param h
+	 *            The height of the rectangle
 	 */
-	public WritableRectangle(double x, double y, double h, double w) {
+	public WritableRectangle(double x, double y, double w, double h) {
 		this.y = y;
 		this.h = h;
 		this.x = x;
@@ -103,7 +103,7 @@ public class WritableRectangle implements
 	public boolean contains(WritablePoint p) {
 		if (p == null)
 			return false;
-		return x < p.getX() && p.getX() < x + w && y < p.getY()
+		return x <= p.getX() && p.getX() < x + w && y <= p.getY()
 				&& p.getY() < y + h;
 	}
 
@@ -192,7 +192,7 @@ public class WritableRectangle implements
 
 	@Override
 	public WritableRectangle copy() {
-		return new WritableRectangle(x, y, h, w);
+		return new WritableRectangle(x, y, w, h);
 	}
 
 	@Override
