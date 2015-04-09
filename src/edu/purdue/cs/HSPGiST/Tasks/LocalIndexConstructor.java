@@ -7,11 +7,9 @@ import org.apache.hadoop.conf.Configurable;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.conf.Configured;
 import org.apache.hadoop.fs.FSDataInputStream;
-import org.apache.hadoop.fs.FSDataOutputStream;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.io.IntWritable;
-import org.apache.hadoop.io.WritableComparable;
 import org.apache.hadoop.mapreduce.Job;
 import org.apache.hadoop.mapreduce.Mapper;
 import org.apache.hadoop.mapreduce.Partitioner;
@@ -29,7 +27,6 @@ import edu.purdue.cs.HSPGiST.HadoopClasses.LocalHSPGiSTOutputFormat;
 import edu.purdue.cs.HSPGiST.SupportClasses.Copyable;
 import edu.purdue.cs.HSPGiST.SupportClasses.HSPIndexNode;
 import edu.purdue.cs.HSPGiST.SupportClasses.HSPLeafNode;
-import edu.purdue.cs.HSPGiST.SupportClasses.HSPReferenceNode;
 import edu.purdue.cs.HSPGiST.SupportClasses.Pair;
 import edu.purdue.cs.HSPGiST.UserDefinedSection.CommandInterpreter;
 
@@ -139,7 +136,7 @@ public class LocalIndexConstructor<MKIn, MVIn, MKOut, MVOut, Pred> extends
 
 		Parser<MKIn, MVIn, MKOut, MVOut> local;
 
-		@SuppressWarnings("unchecked")
+		@SuppressWarnings({ "unchecked", "rawtypes" })
 		public void setup(Context context) {
 			// Give each mapper a copy of the parser
 			Configuration conf = context.getConfiguration();
@@ -252,8 +249,9 @@ public class LocalIndexConstructor<MKIn, MVIn, MKOut, MVOut, Pred> extends
 	 * @param <Pred>
 	 *            The HSPIndex Predicate type
 	 */
-	private static class LocalReducer<MKOut, MVOut, RKOut, RVOut, Pred> extends
-			Reducer<MKOut, MVOut, RKOut, RVOut> {
+	@SuppressWarnings("rawtypes")
+	private static class LocalReducer<MKOut, MVOut, Pred> extends
+			Reducer<MKOut, MVOut, HSPIndexNode, HSPLeafNode> {
 
 		HSPNode<Pred, MKOut, MVOut> root = null;
 		HSPIndex<Pred, MKOut, MVOut> local = null;
@@ -281,7 +279,7 @@ public class LocalIndexConstructor<MKIn, MVIn, MKOut, MVOut, Pred> extends
 						"localRoots/partRoots"));
 				int size = in.readInt();
 				p.readFields(in);
-				for (int i = 0; i < part; i++) {
+				for (int i = 0; i < part && i < size; i++) {
 					p.readFields(in);
 				}
 				in.close();
@@ -304,7 +302,6 @@ public class LocalIndexConstructor<MKIn, MVIn, MKOut, MVOut, Pred> extends
 			}
 		}
 
-		@SuppressWarnings("unchecked")
 		public void cleanup(Context context) throws IOException,
 				InterruptedException {
 			// Call getSize() this call will set the sizes of all nodes in the
@@ -331,13 +328,13 @@ public class LocalIndexConstructor<MKIn, MVIn, MKOut, MVOut, Pred> extends
 							node.setPredicate(temp.getPredicate());
 							continue;
 						}
-						context.write((RKOut) node, null);
+						context.write( (HSPIndexNode) node, null);
 						for (int i = 0; i < temp.getChildren().size(); i++) {
 							stack.add(temp.getChildren().get(i));
 						}
 						node = stack.remove(stack.size() - 1);
 					} else {
-						context.write(null, (RVOut) node);
+						context.write(null, (HSPLeafNode) node);
 						node = null;
 					}
 				} else

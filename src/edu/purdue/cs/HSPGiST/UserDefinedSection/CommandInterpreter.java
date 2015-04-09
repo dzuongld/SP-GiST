@@ -8,8 +8,8 @@ import edu.purdue.cs.HSPGiST.AbstractClasses.HSPIndex;
 import edu.purdue.cs.HSPGiST.AbstractClasses.Parser;
 import edu.purdue.cs.HSPGiST.SupportClasses.*;
 import edu.purdue.cs.HSPGiST.Tasks.LocalIndexConstructor;
+import edu.purdue.cs.HSPGiST.Tasks.QueryTree;
 import edu.purdue.cs.HSPGiST.Tasks.RandomSample;
-import edu.purdue.cs.HSPGiST.Tasks.TreeSearcher;
 
 /**
  * The command interpreter is the main of HSP-GiST It takes user input to run
@@ -115,12 +115,12 @@ public class CommandInterpreter {
 			String arg1[] = args[3].split("/");
 			index = null;
 			sb = null;
-			TreeSearcher search = null;
+			QueryTree search = null;
 			switch (args[2]) {
 			case "OSM":
 				parse = new OSMParser();
 				index = makeIndex(args[1], new CopyWritableLong());
-				search = makeSearcher(args, index, new CopyWritableLong());
+				search = makeQuery(args, index, new CopyWritableLong());
 				sb = new StringBuilder("-");
 				
 				postScript = sb.append(parse.getClass().getSimpleName())
@@ -130,7 +130,7 @@ public class CommandInterpreter {
 			case "BasicTrie":
 				index = makeIndex(args[1], new LongWritable());
 				parse = new BasicTrieParser();
-				search = makeSearcher(args, index, new CopyWritableLong());
+				search = makeQuery(args, index, new CopyWritableLong());
 				sb = new StringBuilder("-");
 				postScript = sb.append(parse.getClass().getSimpleName())
 						.append("-").append(index.getClass().getSimpleName())
@@ -171,12 +171,13 @@ public class CommandInterpreter {
 	}
 		
 	@SuppressWarnings({ "unchecked", "rawtypes" })
-	public static <R> TreeSearcher makeSearcher(String[] args, HSPIndex index, R infer) {
+	public static <R> QueryTree makeQuery(String[] args, HSPIndex index, R infer) {
 		// This switch statement determines the index type
 		// Add cases for your parsers to add them
 		switch (args[1]) {
 		case "Quad":
 			if(args.length != 8){
+				System.out.println(args.length);
 				System.out.println(QQOSM);
 				System.exit(-1);
 			}
@@ -193,13 +194,13 @@ public class CommandInterpreter {
 				System.out.println("Invalid value supplied for coordinate\n");
 				System.exit(1);
 			}
-			return new TreeSearcher<WritableRectangle, WritablePoint, R>(p1, p2, index);
+			return new QueryTree<WritableRectangle, WritablePoint, R>(p1, p2, index);
 		case "Trie":
 			if(args.length != 6){
 				System.out.println(QTTRIE);
 				System.exit(-1);
 			}
-			return new TreeSearcher<WritableChar, WritableString, R>(new WritableString(args[4]),new WritableString(args[5]), index);
+			return new QueryTree<WritableChar, WritableString, R>(new WritableString(args[4]),new WritableString(args[5]), index);
 		}
 		System.err.println("Failed to provide a valid index tree type");
 		System.exit(-1);

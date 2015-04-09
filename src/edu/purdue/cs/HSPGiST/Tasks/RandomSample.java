@@ -99,13 +99,12 @@ public class RandomSample<MKIn, MVIn, MKOut, MVOut, Pred> extends Configured
 		}
 	}
 
-	public static class GlobalReducer<MKOut, MVOut, RKOut, RVOut, Pred> extends
-			Reducer<MKOut, MVOut, RKOut, RVOut> {
-		@SuppressWarnings("rawtypes")
+	@SuppressWarnings("rawtypes")
+	public static class GlobalReducer<MKOut, MVOut, Pred> extends
+			Reducer<MKOut, MVOut, HSPIndexNode, HSPReferenceNode> {
 		HSPIndex index;
 		int numOfReducers = 1;
 
-		@SuppressWarnings("rawtypes")
 		public void setup(Context context) {
 			try {
 				index = (HSPIndex) Class.forName(
@@ -124,7 +123,7 @@ public class RandomSample<MKIn, MVIn, MKOut, MVOut, Pred> extends Configured
 			index.samples.add(((Copyable<MKOut>)key).copy());
 		}
 
-		@SuppressWarnings({ "unchecked", "rawtypes" })
+		@SuppressWarnings({ "unchecked" })
 		public void cleanup(Context context) throws IOException, InterruptedException {
 			index.setupPartitions(numOfReducers);
 			HSPNode nodule = index.globalRoot;
@@ -134,18 +133,19 @@ public class RandomSample<MKIn, MVIn, MKOut, MVOut, Pred> extends Configured
 				if (nodule != null) {
 					if (nodule instanceof HSPIndexNode<?, ?, ?>) {
 						HSPIndexNode temp = (HSPIndexNode) nodule;
-						context.write((RKOut) temp, null);
+						context.write( temp, null);
 						for (int i = 0; i < temp.getChildren().size(); i++) {
 							stack.add((HSPNode) temp.getChildren().get(i));
 						}
 						nodule = stack.remove(stack.size() - 1);
 					} else {
-						context.write(null, (RVOut) nodule);
+						context.write(null, (HSPReferenceNode) nodule);
 						nodule = null;
 					}
 				} else
 					nodule = stack.remove(stack.size() - 1);
 			}
+
 			FileSystem hdfs = FileSystem.get(context.getConfiguration());
 			FSDataOutputStream output = hdfs.create(new Path("localRoots/partRoots"));
 			output.writeInt(index.partRoots.size());

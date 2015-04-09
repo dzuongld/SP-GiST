@@ -21,7 +21,7 @@ public abstract class HSPNode<T, K, R> implements Copyable<HSPNode<T, K, R>> {
 	 * The size of the node's remaining data following the predicate + the size
 	 * of the node's subtree (this only really applies to indexNodes)
 	 */
-	protected long size = 0;
+	public long size = 0;
 
 	/**
 	 * This value represents the number of predicates merged into this node
