@@ -38,7 +38,7 @@ public class TreeSearcher<T, K, R> extends Configured implements Tool {
 
 		Path globalIndexFile = new Path(sb
 				.append(CommandInterpreter.postScript).append("/")
-				.append(CommandInterpreter.GLOBALFILE).toString());
+				.append("part-r-00000").toString());
 		FSDataInputStream input = hdfs.open(globalIndexFile);
 		FSDataOutputStream output = hdfs.create(new Path(
 				"Results/QueryResult.txt"));

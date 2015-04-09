@@ -30,7 +30,7 @@ public abstract class HSPIndex<T, K, R> {
 	public int numSpaceParts;
 
 	// TODO: figure out a reasonable value for this
-	public static final int blocksize = 50;
+	public int blocksize = 50;
 
 	/**
 	 * Maximum Number of decompositions allowed

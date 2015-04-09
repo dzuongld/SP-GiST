@@ -7,7 +7,6 @@ import org.apache.hadoop.util.ToolRunner;
 import edu.purdue.cs.HSPGiST.AbstractClasses.HSPIndex;
 import edu.purdue.cs.HSPGiST.AbstractClasses.Parser;
 import edu.purdue.cs.HSPGiST.SupportClasses.*;
-import edu.purdue.cs.HSPGiST.Tasks.GlobalIndexConstructor;
 import edu.purdue.cs.HSPGiST.Tasks.LocalIndexConstructor;
 import edu.purdue.cs.HSPGiST.Tasks.RandomSample;
 import edu.purdue.cs.HSPGiST.Tasks.TreeSearcher;
@@ -65,7 +64,6 @@ public class CommandInterpreter {
 			String arg[] = args[3].split("/");
 			Parser parse = null;
 			LocalIndexConstructor construct = null;
-			GlobalIndexConstructor finish = null;
 			RandomSample sampler = null;
 			// This switch statement determines the parser
 			// Add cases for your parsers to add them
@@ -73,7 +71,7 @@ public class CommandInterpreter {
 			case "OSM":
 				index = makeIndex(args[1], new CopyWritableLong());
 				parse = new OSMParser();
-				sampler = new RandomSample<Object, Text, WritablePoint, CopyWritableLong>(
+				sampler = new RandomSample<Object, Text, WritablePoint, CopyWritableLong, WritableRectangle>(
 						parse, index);
 				construct = new LocalIndexConstructor<Object, Text, WritablePoint, CopyWritableLong, WritableRectangle>(
 						parse, index);
@@ -87,7 +85,7 @@ public class CommandInterpreter {
 			case "BasicTrie":
 				index = makeIndex(args[1], new CopyWritableLong());
 				parse = new BasicTrieParser();
-				sampler = new RandomSample<Object, Text, WritableString, Text>(
+				sampler = new RandomSample<Object, Text, WritableString, Text, WritableChar>(
 						parse, index);
 				construct = new LocalIndexConstructor<Object, Text, WritableString, CopyWritableLong, WritableChar>(
 						parse, index);

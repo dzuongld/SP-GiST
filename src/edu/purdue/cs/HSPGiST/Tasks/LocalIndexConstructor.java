@@ -112,9 +112,10 @@ public class LocalIndexConstructor<MKIn, MVIn, MKOut, MVOut, Pred> extends
 		job.setNumReduceTasks(numOfReduce);
 		boolean succ = job.waitForCompletion(true);
 		if (!succ) {
-			FileSystem fs = FileSystem.get(getConf());
-			fs.delete(new Path(sb.toString()), true);
+			fileSystem = FileSystem.get(getConf());
+			fileSystem.delete(new Path(sb.toString()), true);
 		}
+		fileSystem.delete(new Path("localRoots"), true);
 		return succ ? 0 : 1;
 	}
 
@@ -188,98 +189,37 @@ public class LocalIndexConstructor<MKIn, MVIn, MKOut, MVOut, Pred> extends
 	private static class LocalPartitioner<MKOut, MVOut, Pred> extends
 			Partitioner<MKOut, MVOut> implements Configurable {
 		private Configuration conf;
-		static HSPIndex index = null;
-		MKOut key;
+		HSPIndex<Pred,MKOut,MVOut> index = null;
 
 		@SuppressWarnings("unchecked")
 		@Override
 		public int getPartition(MKOut key, MVOut value, int numOfReducers) {
-			if (index == null) {
-				try {
-					index = (HSPIndex) Class.forName(conf.get("indexClass"))
-							.newInstance();
-					key = (MKOut) Class.forName(conf.get("keyoutClass"))
-							.newInstance();
-				} catch (InstantiationException | IllegalAccessException
-						| ClassNotFoundException e) {
-					// TODO Auto-generated catch block
-					e.printStackTrace();
+			try {
+				if(index == null){
+					index = (HSPIndex<Pred,MKOut,MVOut>) Class.forName(getConf().get("indexClass"))
+						.newInstance();
+					Pair<Pred, IntWritable> p = new Pair<Pred, IntWritable>();
+					FileSystem hdfs = FileSystem.get(getConf());
+					FSDataInputStream in = hdfs.open(new Path(
+							"localRoots/partRoots"));
+					int size = in.readInt();
+					for (int i = 0; i < size; i++){
+						p.readFields(in);
+						index.partRoots.add(p.copy());
+					}
+					in.close();
 				}
-			}
-			if (index.globalRoot.getChildren().size() == 0) {
-				if (numOfReducers == 1) {
-					((HSPIndex<Pred, MKOut, MVOut>) index).globalRoot = new HSPIndexNode<Pred, MKOut, MVOut>();
-					((HSPIndex<Pred, MKOut, MVOut>) index).globalRoot
-							.getChildren()
-							.add(new HSPReferenceNode<Pred, MKOut, MVOut>(
-									((HSPIndex<Pred, MKOut, MVOut>) index).globalRoot,
-									null, new Path("part-r-00000")));
-				} else {
-					try {
-						FileSystem hdfs = FileSystem.get(getConf());
-						FSDataInputStream in = hdfs.open(new Path(
-								"samp/samples"));
-						int size = in.readInt();
-						for (int i = 0; i < size; i++) {
-							((WritableComparable<MKOut>) key).readFields(in);
-							index.samples.add(key);
-						}
-						in.close();
-						hdfs.delete(new Path("samp/samples"), true);
-					} catch (Exception e) {
+				
+				
+				for (int i = 0; i < index.partRoots.size(); i++) {
+					if(index.consistent(index.partRoots.get(i).getFirst(), key, index.partRoots.get(i).getSecond().get()))
+						return i;
+				}
+				
+			} catch (Exception e) {
 
-					}
-					index.setupPartitions(numOfReducers);
-					try {
-						FileSystem hdfs = FileSystem.get(getConf());
-						StringBuilder sb = new StringBuilder(conf.get("constructsecondout"));
-						Path globalOutput = new Path(sb.append(conf.get("postScript"))
-								.toString());
-						// Clear out pre-existing files if applicable
-						if (hdfs.exists(globalOutput)) {
-							hdfs.delete(globalOutput, true);
-						}
-						hdfs.mkdirs(globalOutput);
-						// Create global output file
-						Path globalIndexFile = new Path(sb.append("/")
-								.append(conf.get("globalfile")).toString());
-						FSDataOutputStream output = hdfs.create(globalIndexFile);
-						// Print nodes in preorder to file
-						HSPNode nodule = index.globalRoot;
-						index.globalRoot.getSize();
-						ArrayList<HSPNode> stack = new ArrayList<HSPNode>();
-						while (!(stack.size() == 0 && nodule == null)) {
-							if (nodule != null) {
-								if (nodule instanceof HSPIndexNode<?, ?, ?>) {
-									HSPIndexNode temp = (HSPIndexNode) nodule;
-									temp.write(output);
-									for (int i = 0; i < temp.getChildren().size(); i++) {
-										stack.add((HSPNode) temp.getChildren().get(i));
-									}
-									nodule = stack.remove(stack.size()-1);
-								} else {
-									((HSPReferenceNode) nodule).write(output);
-									nodule = null;
-								}
-							} else
-								nodule = stack.remove(stack.size()-1);
-						}
-						//Close and return success
-						output.close();
-						output = hdfs.create(new Path("pathPreds/preds"));
-						output.writeInt(index.partRoots.size());
-						for(Pair<Pred, IntWritable> sample : ((ArrayList<Pair<Pred,IntWritable>>)index.partRoots)){
-							((WritableComparable<Pair<Pred, IntWritable>>)sample).write(output);
-						}
-						output.close();
-					} catch (IOException e) {
-						// TODO Auto-generated catch block
-						e.printStackTrace();
-					}
-				}
 			}
-			return ((HSPIndex<Pred, MKOut, MVOut>) index).partition(key, value,
-					numOfReducers);
+			return numOfReducers;
 		}
 
 		@Override
@@ -324,7 +264,8 @@ public class LocalIndexConstructor<MKIn, MVIn, MKOut, MVOut, Pred> extends
 			// Get each reducer a reference to the index, setup an empty leaf
 			// root, and set the depth of the root
 			try {
-				local = (HSPIndex) Class.forName(context.getConfiguration().get("indexClass"))
+				local = (HSPIndex) Class.forName(
+						context.getConfiguration().get("indexClass"))
 						.newInstance();
 			} catch (InstantiationException | IllegalAccessException
 					| ClassNotFoundException e) {
@@ -333,11 +274,11 @@ public class LocalIndexConstructor<MKIn, MVIn, MKOut, MVOut, Pred> extends
 			}
 			int part = context.getConfiguration().getInt(
 					"mapreduce.task.partition", 0);
-			Pair<Pred, IntWritable> p = new Pair<Pred,IntWritable>();
+			Pair<Pred, IntWritable> p = new Pair<Pred, IntWritable>();
 			try {
 				FileSystem hdfs = FileSystem.get(context.getConfiguration());
 				FSDataInputStream in = hdfs.open(new Path(
-						"pathPreds/preds"));
+						"localRoots/partRoots"));
 				int size = in.readInt();
 				p.readFields(in);
 				for (int i = 0; i < part; i++) {

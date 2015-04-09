@@ -177,4 +177,16 @@ public class Trie<R> extends HSPIndex<WritableChar,WritableString,R>{
 		}
 		makeReferences(lowNodes);
 	}
+
+	@Override
+	public boolean range(WritableChar e, WritableString k1, WritableString k2,
+			int level) {
+		return false;
+	}
+
+	@Override
+	public boolean range(WritableString check, WritableString key1,
+			WritableString key2) {
+		return false;
+	}
 }

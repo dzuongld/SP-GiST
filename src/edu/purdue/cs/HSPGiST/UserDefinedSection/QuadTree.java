@@ -21,6 +21,7 @@ public class QuadTree<R> extends HSPIndex<WritableRectangle,WritablePoint,R>{
 		resolution = 50;
 		path = PathShrink.LEAF;
 		nodeShrink = true;
+		blocksize = 50;
 	}
 	private static final int RANGEX = 180;
 	private static final int RANGEY = 90;

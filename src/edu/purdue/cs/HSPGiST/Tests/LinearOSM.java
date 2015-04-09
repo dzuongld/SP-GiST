@@ -1,3 +1,5 @@
+package edu.purdue.cs.HSPGiST.Tests;
+
 import java.io.IOException;
 
 import org.apache.hadoop.conf.Configuration;
@@ -129,7 +131,7 @@ public class LinearOSM extends Configured implements Tool {
 		conf.set(OSMMapper.MAXLON, args[3]);
 		conf.set(OSMMapper.MAXLAT, args[4]);
 		Job job = Job.getInstance(conf, "OSM-Linear");
-		job.setJarByClass(OSMGrid.class);
+		job.setJarByClass(LinearOSM.class);
 		job.setOutputKeyClass(WritablePoint.class);
 		job.setOutputValueClass(LongWritable.class);
 		job.setMapperClass(OSMMapper.class);

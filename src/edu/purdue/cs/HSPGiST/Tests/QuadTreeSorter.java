@@ -1,3 +1,5 @@
+package edu.purdue.cs.HSPGiST.Tests;
+
 import java.io.EOFException;
 import java.io.IOException;
 import java.util.ArrayList;
