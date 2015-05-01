@@ -23,6 +23,7 @@ import org.apache.hadoop.mapreduce.Reducer;
 import org.apache.hadoop.util.Tool;
 
 import edu.purdue.cs.HSPGiST.AbstractClasses.HSPIndex;
+import edu.purdue.cs.HSPGiST.AbstractClasses.Predicate;
 import edu.purdue.cs.HSPGiST.HadoopClasses.GlobalIndexInputFormat;
 import edu.purdue.cs.HSPGiST.SupportClasses.Copyable;
 import edu.purdue.cs.HSPGiST.SupportClasses.HSPIndexNode;
@@ -30,13 +31,13 @@ import edu.purdue.cs.HSPGiST.SupportClasses.HSPLeafNode;
 import edu.purdue.cs.HSPGiST.SupportClasses.Pair;
 import edu.purdue.cs.HSPGiST.UserDefinedSection.CommandInterpreter;
 
-public class QueryTree<T, K, R> extends Configured implements Tool {
+public class QueryTree<K, R> extends Configured implements Tool {
 
 	private K key1;
 	private K key2;
-	private HSPIndex<T, K, R> ind;
+	private HSPIndex<K, R> ind;
 
-	public QueryTree(K key1, K key2, HSPIndex<T, K, R> ind) {
+	public QueryTree(K key1, K key2, HSPIndex<K, R> ind) {
 		this.key1 = key1;
 		this.key2 = key2;
 		this.ind = ind;
@@ -50,13 +51,16 @@ public class QueryTree<T, K, R> extends Configured implements Tool {
 		conf.set("keys-file", "QueryKeys/Keys.tmp");
 		conf.set("keyClassName", key1.getClass().getName());
 		conf.set("indexClass", ind.getClass().getName());
-		conf.set("constructfirstout", CommandInterpreter.CONSTRUCTFIRSTOUT);
+		conf.set("localconstruct", CommandInterpreter.LOCALCONSTRUCT);
 		conf.set("postScript", CommandInterpreter.postScript);
+
+		// Send keys to output for sharing
 		FSDataOutputStream out = FileSystem.get(conf).create(
 				new Path("QueryKeys/Keys.tmp"));
-		((WritableComparable<T>) key1).write(out);
-		((WritableComparable<T>) key2).write(out);
+		((WritableComparable<K>) key1).write(out);
+		((WritableComparable<K>) key2).write(out);
 		out.close();
+		// Setup job
 		Job job = Job.getInstance(conf, "Querying-Tree");
 		job.setJarByClass(QueryTree.class);
 		job.setMapOutputKeyClass(Text.class);
@@ -68,13 +72,15 @@ public class QueryTree<T, K, R> extends Configured implements Tool {
 		job.setMapperClass(QueryMapper.class);
 		job.setPartitionerClass(QueryPartitioner.class);
 		job.setReducerClass(QueryReducer.class);
-		StringBuilder sb = new StringBuilder(
-				CommandInterpreter.CONSTRUCTFIRSTOUT);
+		// Get number of reducers (1 reducer : 1 local index file)
+		StringBuilder sb = new StringBuilder(CommandInterpreter.LOCALCONSTRUCT);
 		sb.append(CommandInterpreter.postScript);
 		Path localIndexFile = new Path(sb.toString());
 		job.setNumReduceTasks((int) (FileSystem.get(conf)
 				.getContentSummary(localIndexFile).getFileCount() - 1));
-		sb = new StringBuilder(CommandInterpreter.CONSTRUCTSECONDOUT);
+
+		// Set input
+		sb = new StringBuilder(CommandInterpreter.GLOBALCONSTRUCT);
 		sb.append(CommandInterpreter.postScript);
 		Path globalIndexFile = new Path(sb.toString());
 		FileInputFormat.addInputPath(job, globalIndexFile);
@@ -103,14 +109,15 @@ public class QueryTree<T, K, R> extends Configured implements Tool {
 
 	}
 
-	public static class QueryReducer<T, K, R> extends
-			Reducer<Text, NullWritable, Pair<K,R>, NullWritable> {
+	public static class QueryReducer<K, R> extends
+			Reducer<Text, NullWritable, Pair<K, R>, NullWritable> {
 		FSDataInputStream input = null;
-		HSPIndex<T,K,R> index = null;
+		HSPIndex<K, R> index = null;
 		K key1;
 		K key2;
+
 		@SuppressWarnings("unchecked")
-		public void setup(Context context) throws IOException {
+		public void slowSetup(Context context) throws IOException {
 			FSDataInputStream keySource = FileSystem.get(
 					context.getConfiguration()).open(
 					new Path(context.getConfiguration().get("keys-file")));
@@ -122,7 +129,7 @@ public class QueryTree<T, K, R> extends Configured implements Tool {
 				((WritableComparable<K>) key1).readFields(keySource);
 				((WritableComparable<K>) key2).readFields(keySource);
 				keySource.close();
-				index = (HSPIndex<T,K,R>) Class.forName(
+				index = (HSPIndex<K, R>) Class.forName(
 						context.getConfiguration().get("indexClass"))
 						.newInstance();
 			} catch (InstantiationException | IllegalAccessException
@@ -135,43 +142,57 @@ public class QueryTree<T, K, R> extends Configured implements Tool {
 				throws IOException, InterruptedException {
 			if (key.toString().isEmpty())
 				return;
-			StringBuilder sb = new StringBuilder(con.getConfiguration().get("constructfirstout"));
+			if(input == null)
+				slowSetup(con);
+			StringBuilder sb = new StringBuilder(con.getConfiguration().get(
+					"localconstruct"));
 			sb.append(con.getConfiguration().get("postScript"));
 			input = FileSystem.get(con.getConfiguration()).open(
 					new Path(sb.append('/').append(key.toString()).toString()));
-			HSPIndexNode<T, K, R> inIndex = null;
-			ArrayList<HSPIndexNode<T, K, R>> stack = new ArrayList<HSPIndexNode<T, K, R>>();
-			HSPIndexNode<T, K, R> curr = new HSPIndexNode<T, K, R>();
+			HSPIndexNode<K, R> inIndex = null;
+			ArrayList<HSPIndexNode<K, R>> stack = new ArrayList<HSPIndexNode<K, R>>();
+			HSPIndexNode<K, R> curr = new HSPIndexNode<K, R>();
 			// Handle consistent local tree
-			HSPLeafNode<T, K, R> inLeaf = null;
+			HSPLeafNode<K, R> inLeaf = null;
 			// get back its first node
-			curr = new HSPIndexNode<T, K, R>();
+			curr = new HSPIndexNode<K, R>();
 			if (input.readBoolean()) {
-				inIndex = new HSPIndexNode<T, K, R>();
+				inIndex = new HSPIndexNode<K, R>();
 				inIndex.readFields(input);
-				curr = (HSPIndexNode<T, K, R>) inIndex.copy();
+				curr = (HSPIndexNode<K, R>) inIndex.copy();
 			} else {
-				inLeaf = new HSPLeafNode<T, K, R>();
+				inLeaf = new HSPLeafNode<K, R>();
 				inLeaf.readFields(input);
+				for (int i = 0; i < inLeaf.getKeyRecords().size(); i++) {
+					Pair<K, R> data = new Pair<K, R>();
+					data = inLeaf.getKeyRecords().get(i);
+					if (index.range(data.getFirst(), key1, key2))
+						con.write(data, NullWritable.get());
+				}
+				return;
 			}
 
-			// set our level as 1 below the root's (kept in offset)
-			int level = curr.getOffset() + 1;
-			while (stack.size() != 0 || curr.getChildren().size() != 0) {
-				if (curr.getChildren().size() == 0) {
+			// set our level as the root's (kept in offset)
+			int level = curr.getOffset();
+			while (true) {
+				while (curr.getChildren().size() == 0) {
+					if (stack.size() == 0) {
+						input.close();
+						return;
+					}
 					curr = stack.remove(stack.size() - 1);
 					level--;
 					level -= curr.getOffset();
-					continue;
 				}
 				curr.getChildren().remove(0);
 				boolean type = input.readBoolean();
 				long size = input.readLong();
-				T obj = null;
+				Predicate obj = null;
 				try {
-					Class<T> clazz = (Class<T>) Class.forName(input.readUTF());
+					Class<Predicate> clazz = (Class<Predicate>) Class
+							.forName(input.readUTF());
 					obj = clazz.newInstance();
-					((WritableComparable<T>) obj).readFields(input);
+					obj.readFields(input);
 				} catch (ClassNotFoundException | InstantiationException
 						| IllegalAccessException e) {
 				}
@@ -179,18 +200,18 @@ public class QueryTree<T, K, R> extends Configured implements Tool {
 
 				if (index.range(obj, key1, key2, level + 1)) {
 					if (type) {
-						inIndex = new HSPIndexNode<T, K, R>();
+						inIndex = new HSPIndexNode<K, R>();
 						inIndex.setOffset(offset);
 						int count = input.readInt();
 						for (int i = 0; i < count; i++) {
 							// populate node with dummy children to get
 							// right size
-							inIndex.getChildren()
-									.add(new HSPIndexNode<T, K, R>(inIndex,
-											(T) null));
+							inIndex.getChildren().add(
+									new HSPIndexNode<K, R>(inIndex,
+											(Predicate) null));
 						}
-						stack.add((HSPIndexNode<T, K, R>) curr.copy());
-						curr = (HSPIndexNode<T, K, R>) inIndex.copy();
+						stack.add((HSPIndexNode<K, R>) curr.copy());
+						curr = (HSPIndexNode<K, R>) inIndex.copy();
 						level++;
 						level += offset;
 					} else {
@@ -207,9 +228,9 @@ public class QueryTree<T, K, R> extends Configured implements Tool {
 					input.seek(pos + size);
 				}
 			}
-			input.close();
+
 		}
-		
+
 	}
-	
+
 }

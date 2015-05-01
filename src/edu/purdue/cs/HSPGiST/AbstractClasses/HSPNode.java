@@ -7,16 +7,14 @@ import edu.purdue.cs.HSPGiST.SupportClasses.Copyable;
  * 
  * @author Stefan Brinton
  *
- * @param <T>
- *            Node predicate type
  * @param <K>
  *            Node key type
  * @param <R>
  *            Node record type
  */
-public abstract class HSPNode<T, K, R> implements Copyable<HSPNode<T, K, R>> {
-	protected HSPNode<T, K, R> parent;
-	protected T predicate;
+public abstract class HSPNode<K, R> implements Copyable<HSPNode<K, R>> {
+	protected HSPNode<K, R> parent;
+	protected Predicate predicate;
 	/**
 	 * The size of the node's remaining data following the predicate + the size
 	 * of the node's subtree (this only really applies to indexNodes)
@@ -36,7 +34,7 @@ public abstract class HSPNode<T, K, R> implements Copyable<HSPNode<T, K, R>> {
 	 * @param predicate
 	 *            Value to set predicate to
 	 */
-	public void setPredicate(T predicate) {
+	public void setPredicate(Predicate predicate) {
 		this.predicate = predicate;
 	}
 
@@ -45,15 +43,15 @@ public abstract class HSPNode<T, K, R> implements Copyable<HSPNode<T, K, R>> {
 	 * 
 	 * @return Current value of predicate
 	 */
-	public T getPredicate() {
+	public Predicate getPredicate() {
 		return predicate;
 	}
 
-	public void setParent(HSPNode<T, K, R> parent) {
+	public void setParent(HSPNode<K, R> parent) {
 		this.parent = parent;
 	}
 
-	public HSPNode<T, K, R> getParent() {
+	public HSPNode<K, R> getParent() {
 		return parent;
 	}
 

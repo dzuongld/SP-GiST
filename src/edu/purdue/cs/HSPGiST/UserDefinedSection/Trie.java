@@ -4,6 +4,7 @@ import java.util.ArrayList;
 
 import edu.purdue.cs.HSPGiST.AbstractClasses.HSPIndex;
 import edu.purdue.cs.HSPGiST.AbstractClasses.HSPNode;
+import edu.purdue.cs.HSPGiST.AbstractClasses.Predicate;
 import edu.purdue.cs.HSPGiST.SupportClasses.*;
 
 /**
@@ -13,7 +14,7 @@ import edu.purdue.cs.HSPGiST.SupportClasses.*;
  */
 
 //The node predicate is a letter. The data nodes are strings.
-public class Trie<R> extends HSPIndex<WritableChar,WritableString,R>{
+public class Trie<R> extends HSPIndex<WritableString,R>{
 	Trie(){
 		numSpaceParts = 26;
 		resolution = 50;
@@ -22,14 +23,14 @@ public class Trie<R> extends HSPIndex<WritableChar,WritableString,R>{
 	}
 	
 	@Override
-	public boolean consistent(HSPNode<WritableChar, WritableString,R> e,
+	public boolean consistent(HSPNode<WritableString,R> e,
 			WritableString q, int level) {
 		if (((WritableChar)(e.getPredicate())).getChar() == q.getString().charAt(level-1)) return true;
 		if (((WritableChar)(e.getPredicate())).getChar() == '-' && level >= q.getString().length()) return true;
 		return false;
 	}
 	
-	private void initializePredicates(ArrayList<WritableChar> predicates){
+	private void initializePredicates(ArrayList<Predicate> predicates){
 		for (int i=0; i<27; i++){
 			predicates.add(new WritableChar(intToChar(i)));
 		}	
@@ -103,9 +104,9 @@ public class Trie<R> extends HSPIndex<WritableChar,WritableString,R>{
 		
 	@Override
 	public boolean picksplit(
-			HSPLeafNode<WritableChar, WritableString, R> leaf, int level,
+			HSPLeafNode<WritableString, R> leaf, int level,
 			ArrayList<ArrayList<Pair<WritableString, R>>> childrenData,
-			ArrayList<WritableChar> childrenPredicates) {
+			ArrayList<Predicate> childrenPredicates) {
 		if (level == 1){
 			initializePredicates(childrenPredicates);
 			for (Pair<WritableString, R> p : leaf.getKeyRecords()){
@@ -120,7 +121,7 @@ public class Trie<R> extends HSPIndex<WritableChar,WritableString,R>{
 			}
 			return false;
 		}
-		WritableChar predic = leaf.getPredicate();
+		WritableChar predic = (WritableChar)leaf.getPredicate();
 		if (predic == null) return false;
 		initializePredicates(childrenPredicates);
 		for (Pair<WritableString, R> p : leaf.getKeyRecords()){
@@ -138,28 +139,28 @@ public class Trie<R> extends HSPIndex<WritableChar,WritableString,R>{
 
 	@Override
 	public WritableChar determinePredicate(WritableString key,
-			WritableChar parentPred, int level) {
+			Predicate parentPred, int level) {
 		char c = key.getString().charAt(level-1);
 		return new WritableChar(c);
 	}
 	
 	@Override
-	public boolean consistent(WritableChar e, WritableString q, int level) {
-		if (e.getChar() == q.getString().charAt(level - 1)) return true;
-		if (e.getChar() == '-' && level >= q.getString().length()) return true;
+	public boolean consistent(Predicate e, WritableString q, int level) {
+		if (((WritableChar) e).getChar() == q.getString().charAt(level - 1)) return true;
+		if (((WritableChar) e).getChar() == '-' && level >= q.getString().length()) return true;
 		return false;
 	}
 		
 	@Override
 	public void setupPartitions(int numOfReducers) {
 		int divisions = (numOfReducers-1)/(numSpaceParts-1);
-		ArrayList<WritableChar> preds = new ArrayList<WritableChar>();
+		ArrayList<Predicate> preds = new ArrayList<Predicate>();
 		initializePredicates(preds);
 		if (divisions == 1){
 			finalizeGlobalRoot(preds);
 			return;
 		}		
-		ArrayList<Pair<HSPLeafNode<WritableChar, WritableString, R>, Integer>> lowNodes = initializeGlobalRoot(preds);
+		ArrayList<Pair<HSPLeafNode<WritableString, R>, Integer>> lowNodes = initializeGlobalRoot(preds);
 		divisions--;
 		while(true){
 			int most = -1;
@@ -179,7 +180,7 @@ public class Trie<R> extends HSPIndex<WritableChar,WritableString,R>{
 	}
 
 	@Override
-	public boolean range(WritableChar e, WritableString k1, WritableString k2,
+	public boolean range(Predicate e, WritableString k1, WritableString k2,
 			int level) {
 		return false;
 	}

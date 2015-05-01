@@ -8,6 +8,7 @@ import java.util.ArrayList;
 import org.apache.hadoop.io.WritableComparable;
 
 import edu.purdue.cs.HSPGiST.AbstractClasses.HSPNode;
+import edu.purdue.cs.HSPGiST.AbstractClasses.Predicate;
 
 /**
  * Representation of leaf or data nodes in an index Contains a reference to
@@ -15,15 +16,13 @@ import edu.purdue.cs.HSPGiST.AbstractClasses.HSPNode;
  * 
  * @author Stefan Brinton
  *
- * @param <T>
- *            Predicate Type
  * @param <K>
  *            Key Type
  * @param <R>
  *            Record Type
  */
-public class HSPLeafNode<T, K, R> extends HSPNode<T, K, R> implements
-		WritableComparable<HSPLeafNode<T, K, R>> {
+public class HSPLeafNode<K, R> extends HSPNode<K, R> implements
+		WritableComparable<HSPLeafNode<K, R>> {
 
 	/**
 	 * This nodes key-record pairs
@@ -44,7 +43,7 @@ public class HSPLeafNode<T, K, R> extends HSPNode<T, K, R> implements
 	 * @param parent
 	 *            Should be null
 	 */
-	public HSPLeafNode(HSPIndexNode<T, K, R> parent) {
+	public HSPLeafNode(HSPIndexNode<K, R> parent) {
 		this.parent = parent;
 		keyRecords = new ArrayList<Pair<K, R>>();
 	}
@@ -57,7 +56,7 @@ public class HSPLeafNode<T, K, R> extends HSPNode<T, K, R> implements
 	 * @param predicate
 	 *            The predicate of this leaf
 	 */
-	public HSPLeafNode(HSPIndexNode<T, K, R> parent, T predicate) {
+	public HSPLeafNode(HSPIndexNode<K, R> parent, Predicate predicate) {
 		this.parent = parent;
 		keyRecords = new ArrayList<Pair<K, R>>();
 		this.predicate = predicate;
@@ -73,7 +72,7 @@ public class HSPLeafNode<T, K, R> extends HSPNode<T, K, R> implements
 	 * @param records
 	 *            The records belonging to this leaf
 	 */
-	public HSPLeafNode(HSPIndexNode<T, K, R> parent, T predicate,
+	public HSPLeafNode(HSPIndexNode<K, R> parent, Predicate predicate,
 			ArrayList<Pair<K, R>> records) {
 		this.parent = parent;
 		keyRecords = records;
@@ -101,11 +100,11 @@ public class HSPLeafNode<T, K, R> extends HSPNode<T, K, R> implements
 		if (o == null) {
 			return false;
 		}
-		if (!(o instanceof HSPLeafNode<?, ?, ?>))
+		if (!(o instanceof HSPLeafNode<?, ?>))
 			return false;
-		HSPLeafNode<T, K, R> other;
+		HSPLeafNode<K, R> other;
 		try {
-			other = (HSPLeafNode<T, K, R>) o;
+			other = (HSPLeafNode<K, R>) o;
 		} catch (ClassCastException e) {
 			return false;
 		}
@@ -123,7 +122,7 @@ public class HSPLeafNode<T, K, R> extends HSPNode<T, K, R> implements
 	}
 
 	@Override
-	public int compareTo(HSPLeafNode<T, K, R> o) {
+	public int compareTo(HSPLeafNode<K, R> o) {
 		if (o == null)
 			return 1;
 		if (this.equals(o))
@@ -151,9 +150,9 @@ public class HSPLeafNode<T, K, R> extends HSPNode<T, K, R> implements
 		// Get class of predicate to read its fields and set this predicate
 		String temp = arg0.readUTF();
 		try {
-			Class<T> clazz = (Class<T>) Class.forName(temp);
-			T obj = clazz.newInstance();
-			((WritableComparable<T>) obj).readFields(arg0);
+			Class<Predicate> clazz = (Class<Predicate>) Class.forName(temp);
+			Predicate obj = clazz.newInstance();
+			obj.readFields(arg0);
 			setPredicate(obj);
 		} catch (ClassNotFoundException | InstantiationException
 				| IllegalAccessException e) {
@@ -171,7 +170,6 @@ public class HSPLeafNode<T, K, R> extends HSPNode<T, K, R> implements
 		}
 	}
 
-	@SuppressWarnings("unchecked")
 	@Override
 	public void write(DataOutput arg0) throws IOException {
 		arg0.writeBoolean(false);
@@ -183,7 +181,7 @@ public class HSPLeafNode<T, K, R> extends HSPNode<T, K, R> implements
 			arg0.writeUTF("null");
 		else {
 			arg0.writeUTF(getPredicate().getClass().getName());
-			((WritableComparable<T>) getPredicate()).write(arg0);
+			getPredicate().write(arg0);
 		}
 		arg0.writeInt(getOffset());
 		arg0.writeInt(keyRecords.size());
@@ -193,8 +191,8 @@ public class HSPLeafNode<T, K, R> extends HSPNode<T, K, R> implements
 	}
 
 	@Override
-	public HSPNode<T, K, R> copy() {
-		return new HSPLeafNode<T, K, R>((HSPIndexNode<T, K, R>) getParent(),
+	public HSPNode<K, R> copy() {
+		return new HSPLeafNode<K, R>((HSPIndexNode<K, R>) getParent(),
 				getPredicate(), keyRecords);
 	}
 

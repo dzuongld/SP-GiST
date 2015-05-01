@@ -4,16 +4,14 @@ import java.io.DataInput;
 import java.io.DataOutput;
 import java.io.IOException;
 
-import org.apache.hadoop.io.WritableComparable;
-
-import edu.purdue.cs.HSPGiST.SupportClasses.Copyable;
+import edu.purdue.cs.HSPGiST.AbstractClasses.Predicate;
 
 /**
  * Simple writablechar implementation. Only represents the 26 lowercase letters.
  * @author Dan Fortney and Stefan Brinton
  *
  */
-public class WritableChar implements WritableComparable<WritableChar>, Copyable<WritableChar>, Sized{
+public class WritableChar extends Predicate{
 	private char ch;
 	public WritableChar() {}
 
@@ -48,9 +46,11 @@ public class WritableChar implements WritableComparable<WritableChar>, Copyable<
 		WritableChar other = (WritableChar)o;
 		return this.ch == other.ch;
 	}
-	public int compareTo(WritableChar o){
+	public int compareTo(Predicate o){
+		if(!(o instanceof WritableChar))
+			return -1;
 		char ch1 = this.ch;
-		char ch2 = o.ch;
+		char ch2 = ((WritableChar) o).ch;
 		return (ch1<ch2 ? -1 : (ch1==ch2 ? 0 : 1));
 	}
 	public String toString() {
@@ -66,5 +66,16 @@ public class WritableChar implements WritableComparable<WritableChar>, Copyable<
 	@Override
 	public long getSize() {
 		return 2;
+	}
+
+	@Override
+	public String convertToJSON() {
+		return null;
+	}
+
+	@Override
+	public void convertFromJSON(String json) {
+		// TODO Auto-generated method stub
+		
 	}
 }

@@ -8,6 +8,7 @@ import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.io.WritableComparable;
 
 import edu.purdue.cs.HSPGiST.AbstractClasses.HSPNode;
+import edu.purdue.cs.HSPGiST.AbstractClasses.Predicate;
 
 /**
  * These are the leaf nodes of the global index, providing paths to "local"
@@ -15,15 +16,13 @@ import edu.purdue.cs.HSPGiST.AbstractClasses.HSPNode;
  * 
  * @author Stefan Brinton
  *
- * @param <T>
- *            Predicate type
  * @param <K>
  *            Key type
  * @param <R>
  *            Record type
  */
-public class HSPReferenceNode<T, K, R> extends HSPNode<T, K, R> implements
-		WritableComparable<HSPReferenceNode<T, K, R>> {
+public class HSPReferenceNode<K, R> extends HSPNode<K, R> implements
+		WritableComparable<HSPReferenceNode<K, R>> {
 	private Path reference;
 
 	/**
@@ -43,7 +42,7 @@ public class HSPReferenceNode<T, K, R> extends HSPNode<T, K, R> implements
 	 * @param path
 	 *            The path of the local root the node represents
 	 */
-	public HSPReferenceNode(HSPNode<T, K, R> parent, T predicate, Path path) {
+	public HSPReferenceNode(HSPNode<K, R> parent, Predicate predicate, Path path) {
 		reference = path;
 		this.predicate = predicate;
 		this.parent = parent;
@@ -59,7 +58,7 @@ public class HSPReferenceNode<T, K, R> extends HSPNode<T, K, R> implements
 	 * @param path
 	 *            The string for the path of the local root the node represents
 	 */
-	public HSPReferenceNode(HSPNode<T, K, R> parent, T predicate, String path) {
+	public HSPReferenceNode(HSPNode<K, R> parent, Predicate predicate, String path) {
 		this(parent, predicate, new Path(path));
 	}
 
@@ -92,11 +91,11 @@ public class HSPReferenceNode<T, K, R> extends HSPNode<T, K, R> implements
 		if (o == null) {
 			return false;
 		}
-		if (!(o instanceof HSPReferenceNode<?, ?, ?>))
+		if (!(o instanceof HSPReferenceNode<?, ?>))
 			return false;
-		HSPReferenceNode<T, K, R> other;
+		HSPReferenceNode<K, R> other;
 		try {
-			other = (HSPReferenceNode<T, K, R>) o;
+			other = (HSPReferenceNode<K, R>) o;
 		} catch (ClassCastException e) {
 			return false;
 		}
@@ -117,7 +116,7 @@ public class HSPReferenceNode<T, K, R> extends HSPNode<T, K, R> implements
 	 * Trivial Comparator for IndexNodes for WritableComparable
 	 */
 	@Override
-	public int compareTo(HSPReferenceNode<T, K, R> o) {
+	public int compareTo(HSPReferenceNode<K, R> o) {
 		if (o == null)
 			return 1;
 		if (this.equals(o))
@@ -143,9 +142,9 @@ public class HSPReferenceNode<T, K, R> extends HSPNode<T, K, R> implements
 		String temp = arg0.readUTF();
 		// Read the class name to initialize this node's predicate
 		try {
-			Class<T> clazz = (Class<T>) Class.forName(temp);
-			T obj = clazz.newInstance();
-			((WritableComparable<T>) obj).readFields(arg0);
+			Class<Predicate> clazz = (Class<Predicate>) Class.forName(temp);
+			Predicate obj = clazz.newInstance();
+			obj.readFields(arg0);
 			predicate = obj;
 		} catch (ClassNotFoundException | InstantiationException
 				| IllegalAccessException e) {
@@ -155,7 +154,6 @@ public class HSPReferenceNode<T, K, R> extends HSPNode<T, K, R> implements
 		reference = new Path(arg0.readUTF());
 	}
 
-	@SuppressWarnings("unchecked")
 	@Override
 	public void write(DataOutput arg0) throws IOException {
 		// Write class name or null for read back
@@ -165,14 +163,14 @@ public class HSPReferenceNode<T, K, R> extends HSPNode<T, K, R> implements
 			arg0.writeUTF("null");
 		else {
 			arg0.writeUTF(predicate.getClass().getName());
-			((WritableComparable<T>) predicate).write(arg0);
+			predicate.write(arg0);
 		}
 		arg0.writeUTF(reference.toString());
 	}
 
 	@Override
-	public HSPNode<T, K, R> copy() {
-		return new HSPReferenceNode<T, K, R>(parent, predicate, reference);
+	public HSPNode<K, R> copy() {
+		return new HSPReferenceNode<K, R>(parent, predicate, reference);
 	}
 
 	@Override
@@ -185,5 +183,14 @@ public class HSPReferenceNode<T, K, R> extends HSPNode<T, K, R> implements
 			//2 for UTF output length, length of UTF string, and the predicate's size
 			selfSize += 2 +(predicate.getClass().getName().length() + ((Sized)predicate).getSize());
 		return size + selfSize;
+	}
+	
+	public String convertToJSON(){
+		StringBuilder sb = new StringBuilder("{");
+		sb.append(reference.toString());
+		sb.append(',');
+		sb.append(predicate.convertToJSON());
+		sb.append('}');
+		return sb.toString();
 	}
 }

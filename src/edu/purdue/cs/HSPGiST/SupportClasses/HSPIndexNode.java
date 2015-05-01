@@ -9,6 +9,7 @@ import org.apache.hadoop.io.WritableComparable;
 
 import edu.purdue.cs.HSPGiST.AbstractClasses.HSPIndex;
 import edu.purdue.cs.HSPGiST.AbstractClasses.HSPNode;
+import edu.purdue.cs.HSPGiST.AbstractClasses.Predicate;
 
 /**
  * Representation of index nodes for HSP-GiST indices They store a reference to
@@ -16,27 +17,25 @@ import edu.purdue.cs.HSPGiST.AbstractClasses.HSPNode;
  * 
  * @author Stefan Brinton
  *
- * @param <T>
- *            Predicate type
  * @param <K>
  *            Key type
  * @param <R>
  *            Record type
  */
-public class HSPIndexNode<T, K, R> extends HSPNode<T, K, R> implements
-		WritableComparable<HSPIndexNode<T, K, R>> {
+public class HSPIndexNode<K, R> extends HSPNode<K, R> implements
+		WritableComparable<HSPIndexNode<K, R>> {
 
 	/**
 	 * This node's children
 	 */
-	private ArrayList<HSPNode<T, K, R>> children;
+	private ArrayList<HSPNode<K, R>> children;
 
 	/**
 	 * Empty constructor for initializing this object from its class object or
 	 * for creating an empty Index Node (root)
 	 */
 	public HSPIndexNode() {
-		this.children = new ArrayList<HSPNode<T, K, R>>();
+		this.children = new ArrayList<HSPNode<K, R>>();
 		parent = null;
 		predicate = null;
 	}
@@ -49,8 +48,8 @@ public class HSPIndexNode<T, K, R> extends HSPNode<T, K, R> implements
 	 * @param predicate
 	 *            The predicate of this node
 	 */
-	public HSPIndexNode(HSPNode<T, K, R> parent, T predicate) {
-		this.children = new ArrayList<HSPNode<T, K, R>>();
+	public HSPIndexNode(HSPNode<K, R> parent, Predicate predicate) {
+		this.children = new ArrayList<HSPNode<K, R>>();
 		this.predicate = predicate;
 		this.parent = parent;
 	}
@@ -63,7 +62,7 @@ public class HSPIndexNode<T, K, R> extends HSPNode<T, K, R> implements
 	 * @param parent
 	 *            should be the value null
 	 */
-	public HSPIndexNode(HSPNode<T, K, R> parent) {
+	public HSPIndexNode(HSPNode<K, R> parent) {
 		this.children = null;
 		this.parent = parent;
 		this.predicate = null;
@@ -79,11 +78,11 @@ public class HSPIndexNode<T, K, R> extends HSPNode<T, K, R> implements
 	 * @param children
 	 *            The children of this node
 	 */
-	public HSPIndexNode(HSPNode<T, K, R> parent, T predicate,
-			ArrayList<HSPNode<T, K, R>> children) {
-		this.children = new ArrayList<HSPNode<T, K, R>>();
-		for (HSPNode<T, K, R> child : children) {
-			this.children.add(((Copyable<HSPNode<T, K, R>>) child).copy());
+	public HSPIndexNode(HSPNode<K, R> parent, Predicate predicate,
+			ArrayList<HSPNode<K, R>> children) {
+		this.children = new ArrayList<HSPNode<K, R>>();
+		for (HSPNode<K, R> child : children) {
+			this.children.add(((Copyable<HSPNode<K, R>>) child).copy());
 		}
 		this.predicate = predicate;
 		this.parent = parent;
@@ -102,9 +101,9 @@ public class HSPIndexNode<T, K, R> extends HSPNode<T, K, R> implements
 	 * @param level
 	 *            The level within the tree the node will be created at
 	 */
-	public HSPIndexNode(HSPNode<T, K, R> parent, T predicate,
-			HSPIndex<T, K, R> index, int level) {
-		this.children = new ArrayList<HSPNode<T, K, R>>();
+	public HSPIndexNode(HSPNode<K, R> parent, Predicate predicate,
+			HSPIndex<K, R> index, int level) {
+		this.children = new ArrayList<HSPNode<K, R>>();
 		this.parent = parent;
 		this.predicate = predicate;
 		if (!index.nodeShrink && index.path == HSPIndex.PathShrink.NEVER) {
@@ -121,12 +120,12 @@ public class HSPIndexNode<T, K, R> extends HSPNode<T, K, R> implements
 			for (int i = 0; i < index.numSpaceParts; i++) {
 				junk.add(new ArrayList<Pair<K, R>>());
 			}
-			ArrayList<T> preds = new ArrayList<T>();
-			index.picksplit(new HSPLeafNode<T, K, R>(
-					(HSPIndexNode<T, K, R>) parent, predicate), level, junk,
+			ArrayList<Predicate> preds = new ArrayList<Predicate>();
+			index.picksplit(new HSPLeafNode<K, R>(
+					(HSPIndexNode<K, R>) parent, predicate), level, junk,
 					preds);
 			for (int i = 0; i < index.numSpaceParts; i++) {
-				this.children.add(new HSPLeafNode<T, K, R>(this, preds.get(i)));
+				this.children.add(new HSPLeafNode<K, R>(this, preds.get(i)));
 			}
 		}
 	}
@@ -134,7 +133,7 @@ public class HSPIndexNode<T, K, R> extends HSPNode<T, K, R> implements
 	/**
 	 * @return the children of this node
 	 */
-	public ArrayList<HSPNode<T, K, R>> getChildren() {
+	public ArrayList<HSPNode<K, R>> getChildren() {
 		return children;
 	}
 
@@ -142,7 +141,7 @@ public class HSPIndexNode<T, K, R> extends HSPNode<T, K, R> implements
 	 * @param children
 	 *            the children to set
 	 */
-	public void setChildren(ArrayList<HSPNode<T, K, R>> children) {
+	public void setChildren(ArrayList<HSPNode<K, R>> children) {
 		this.children = children;
 	}
 
@@ -152,11 +151,11 @@ public class HSPIndexNode<T, K, R> extends HSPNode<T, K, R> implements
 		if (o == null) {
 			return false;
 		}
-		if (!(o instanceof HSPIndexNode<?, ?, ?>))
+		if (!(o instanceof HSPIndexNode<?, ?>))
 			return false;
-		HSPIndexNode<T, K, R> other;
+		HSPIndexNode<K, R> other;
 		try {
-			other = (HSPIndexNode<T, K, R>) o;
+			other = (HSPIndexNode<K, R>) o;
 		} catch (ClassCastException e) {
 			return false;
 		}
@@ -177,7 +176,7 @@ public class HSPIndexNode<T, K, R> extends HSPNode<T, K, R> implements
 	 * Trivial Comparator for IndexNodes for WritableComparable
 	 */
 	@Override
-	public int compareTo(HSPIndexNode<T, K, R> o) {
+	public int compareTo(HSPIndexNode<K, R> o) {
 		if (o == null)
 			return 1;
 		if (this.equals(o))
@@ -210,9 +209,9 @@ public class HSPIndexNode<T, K, R> extends HSPNode<T, K, R> implements
 		// Read name of predicate class to create this Index Node's predicate
 		String temp = arg0.readUTF();
 		try {
-			Class<T> clazz = (Class<T>) Class.forName(temp);
-			T obj = clazz.newInstance();
-			((WritableComparable<T>) obj).readFields(arg0);
+			Class<Predicate> clazz = (Class<Predicate>) Class.forName(temp);
+			Predicate obj = clazz.newInstance();
+			obj.readFields(arg0);
 			this.predicate = obj;
 		} catch (ClassNotFoundException | InstantiationException
 				| IllegalAccessException e) {
@@ -223,12 +222,11 @@ public class HSPIndexNode<T, K, R> extends HSPNode<T, K, R> implements
 		int size = arg0.readInt();
 		for (int i = 0; i < size; i++) {
 			// populate node with dummy children to get right size
-			this.children.add(new HSPIndexNode<T, K, R>(this, (T) null));
+			this.children.add(new HSPIndexNode<K, R>(this, (Predicate) null));
 		}
 		
 	}
 
-	@SuppressWarnings("unchecked")
 	@Override
 	public void write(DataOutput arg0) throws IOException {
 		arg0.writeBoolean(true);
@@ -239,7 +237,7 @@ public class HSPIndexNode<T, K, R> extends HSPNode<T, K, R> implements
 			// Write predicate class name so we can invoke one when reading this
 			// back
 			arg0.writeUTF(this.predicate.getClass().getName());
-			((WritableComparable<T>) this.predicate).write(arg0);
+			this.predicate.write(arg0);
 		}
 		arg0.writeInt(getOffset());
 		if (this.children != null)
@@ -249,13 +247,13 @@ public class HSPIndexNode<T, K, R> extends HSPNode<T, K, R> implements
 	}
 
 	@Override
-	public HSPNode<T, K, R> copy() {
-		return new HSPIndexNode<T, K, R>(parent, this.predicate, this.children);
+	public HSPNode<K, R> copy() {
+		return new HSPIndexNode<K, R>(parent, this.predicate, this.children);
 	}
 
 	@Override
 	public long getSize() {
-		for(HSPNode<T,K,R> node : children)
+		for(HSPNode<K,R> node : children)
 			size += node.getSize();
 		size += Integer.SIZE>>3;
 		long selfSize = (Integer.SIZE>>3) + (Long.SIZE>>3) + 1;
@@ -269,5 +267,17 @@ public class HSPIndexNode<T, K, R> extends HSPNode<T, K, R> implements
 			selfSize += 2 + len + size;
 		}
 		return size + selfSize;
+	}
+	
+	public String convertToJSON(){
+		StringBuilder sb = new StringBuilder("{");
+		sb.append(children.size());
+		sb.append(',');
+		if(predicate == null)
+			sb.append("null");
+		else
+			sb.append(predicate.convertToJSON());
+		sb.append('}');
+		return sb.toString();
 	}
 }

@@ -23,19 +23,18 @@ public class CommandInterpreter {
 	/**
 	 * The prefix for the output directory for LocalIndexConstuctor
 	 */
-	public final static String CONSTRUCTFIRSTOUT = "Local";
+	public final static String LOCALCONSTRUCT = "Local";
 
 	/**
 	 * The prefix for the output directory for GlobalIndexConstructor
 	 */
-	public static final String CONSTRUCTSECONDOUT = "Global";
+	public static final String GLOBALCONSTRUCT = "Global";
 
 	/**
 	 * The suffix for the output directories
 	 */
 	public static String postScript = "";
-
-	public static final String GLOBALFILE = "GlobalTree";
+	public static String globalTree = "";
 
 	public static final String USEHELP = "Invalid Input: use the -h or -help flag for a list of uses";
 	public static final String HELP = "HSP-GiST <Option>\nFlags Usage:\n";
@@ -43,6 +42,8 @@ public class CommandInterpreter {
 	public static final String QUSAGE = "Usage for -q or -query:\nHSP-GiST -q(uery) <Index_Name> <Parser_Name> <Input_Directory> <Index_Range>";
 	public static final String QQOSM = "Usage for -q or -query:\nHSP-GiST -q(uery) <Index_Name> <Parser_Name> <Input_Directory> <X Value of Lower Left Corner> <Y Value of Lower Left Corner> <X Value of Upper Right Corner> <Y Value Of Upper Right Corner>";
 	public static final String QTTRIE = "Usage for -q or -query:\nHSP-GiST -q(uery) <Index_Name> <Parser_Name> <Input_Directory> <First String Alphabetically> <Second String Alphabetically>";
+
+	public static final double REDUCERPERSPLIT = 2.5; 
 	
 	@SuppressWarnings({ "rawtypes", "unchecked" })
 	public static void main(String args[]) throws Exception {
@@ -71,10 +72,10 @@ public class CommandInterpreter {
 			case "OSM":
 				index = makeIndex(args[1], new CopyWritableLong());
 				parse = new OSMParser();
-				sampler = new RandomSample<Object, Text, WritablePoint, CopyWritableLong, WritableRectangle>(
+				sampler = new RandomSample<Object, Text, WritablePoint, CopyWritableLong>(
 						parse, index);
-				construct = new LocalIndexConstructor<Object, Text, WritablePoint, CopyWritableLong, WritableRectangle>(
-						parse, index);
+				construct = new LocalIndexConstructor<Object, Text, WritablePoint, CopyWritableLong>(
+						parse, index, new WritableRectangle());
 				sb = new StringBuilder("-");
 				
 				
@@ -85,10 +86,10 @@ public class CommandInterpreter {
 			case "BasicTrie":
 				index = makeIndex(args[1], new CopyWritableLong());
 				parse = new BasicTrieParser();
-				sampler = new RandomSample<Object, Text, WritableString, Text, WritableChar>(
+				sampler = new RandomSample<Object, Text, WritableString, Text>(
 						parse, index);
-				construct = new LocalIndexConstructor<Object, Text, WritableString, CopyWritableLong, WritableChar>(
-						parse, index);
+				construct = new LocalIndexConstructor<Object, Text, WritableString, CopyWritableLong>(
+						parse, index, new WritableChar());
 				sb = new StringBuilder("-");
 				postScript = sb.append(parse.getClass().getSimpleName())
 						.append("-").append(index.getClass().getSimpleName())
@@ -194,13 +195,13 @@ public class CommandInterpreter {
 				System.out.println("Invalid value supplied for coordinate\n");
 				System.exit(1);
 			}
-			return new QueryTree<WritableRectangle, WritablePoint, R>(p1, p2, index);
+			return new QueryTree<WritablePoint, R>(p1, p2, index);
 		case "Trie":
 			if(args.length != 6){
 				System.out.println(QTTRIE);
 				System.exit(-1);
 			}
-			return new QueryTree<WritableChar, WritableString, R>(new WritableString(args[4]),new WritableString(args[5]), index);
+			return new QueryTree<WritableString, R>(new WritableString(args[4]),new WritableString(args[5]), index);
 		}
 		System.err.println("Failed to provide a valid index tree type");
 		System.exit(-1);

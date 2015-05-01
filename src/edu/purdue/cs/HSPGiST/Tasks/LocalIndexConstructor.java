@@ -23,10 +23,12 @@ import org.apache.hadoop.util.Tool;
 import edu.purdue.cs.HSPGiST.AbstractClasses.HSPIndex;
 import edu.purdue.cs.HSPGiST.AbstractClasses.HSPNode;
 import edu.purdue.cs.HSPGiST.AbstractClasses.Parser;
+import edu.purdue.cs.HSPGiST.AbstractClasses.Predicate;
 import edu.purdue.cs.HSPGiST.HadoopClasses.LocalHSPGiSTOutputFormat;
 import edu.purdue.cs.HSPGiST.SupportClasses.Copyable;
 import edu.purdue.cs.HSPGiST.SupportClasses.HSPIndexNode;
 import edu.purdue.cs.HSPGiST.SupportClasses.HSPLeafNode;
+import edu.purdue.cs.HSPGiST.SupportClasses.HSPReferenceNode;
 import edu.purdue.cs.HSPGiST.SupportClasses.Pair;
 import edu.purdue.cs.HSPGiST.UserDefinedSection.CommandInterpreter;
 
@@ -44,50 +46,55 @@ import edu.purdue.cs.HSPGiST.UserDefinedSection.CommandInterpreter;
  *            The Mapper Output/Reducer Input/HSPIndex key
  * @param <MVOut>
  *            The Mapper Output/Reducer Input/HSPIndex value
- * @param <Pred>
- *            The HSPIndex predicate type
  */
-public class LocalIndexConstructor<MKIn, MVIn, MKOut, MVOut, Pred> extends
-		Configured implements Tool {
-	Parser<?, ?, ?, ?> parser = null;
+public class LocalIndexConstructor<MKIn, MVIn, MKOut, MVOut> extends Configured
+		implements Tool {
+	Parser<MKIn, MVIn, MKOut, MVOut> parser = null;
 
-	HSPIndex<?, ?, ?> index = null;
+	HSPIndex<MKOut, MVOut> index = null;
+	Predicate pred = null;
 
 	public LocalIndexConstructor(Parser<MKIn, MVIn, MKOut, MVOut> parser,
-			HSPIndex<Pred, MKOut, MVOut> index) {
+			HSPIndex<MKOut, MVOut> index, Predicate pred) {
 		super();
 		this.parser = parser;
 		this.index = index;
+		this.pred = pred;
 	}
 
 	@Override
 	public int run(String[] args) throws Exception {
 		// Standardized setup
 		Configuration conf = new Configuration();
-		conf.set("parserClass", parser.getClass().getName());
-		conf.set("indexClass", index.getClass().getName());
-		conf.set("keyoutClass", parser.keyout.getName());
-		conf.set("constructsecondout", CommandInterpreter.CONSTRUCTSECONDOUT);
-		conf.set("postScript", CommandInterpreter.postScript);
-		conf.set("globalfile", CommandInterpreter.GLOBALFILE);
+		conf.set("mapreduce.mapper.parserClass", parser.getClass().getName());
+		conf.set("mapreduce.reducer.indexClass", index.getClass().getName());
+		conf.set("mapreduce.partitioner.predicateClass", pred.getClass()
+				.getName());
+		conf.set("mapreduce.partitioner.globalconstruct",
+				CommandInterpreter.GLOBALCONSTRUCT);
+		conf.set("mapreduce.partitioner.postscript",
+				CommandInterpreter.postScript);
+		// Clean it up for space
 		Job job = Job.getInstance(conf, "Local-Construction");
 		job.setJarByClass(LocalIndexConstructor.class);
+
 		// Mapper output is not the same as reducer output
 		// So we need to use the parser to set output
 		job.setMapOutputKeyClass(parser.keyout);
 		job.setMapOutputValueClass(parser.valout);
+
 		job.setOutputKeyClass(HSPIndexNode.class);
 		job.setOutputValueClass(HSPLeafNode.class);
 		job.setInputFormatClass(TextInputFormat.class);
 		job.setOutputFormatClass(LocalHSPGiSTOutputFormat.class);
 		FileInputFormat.addInputPath(job, new Path(args[3]));
-		StringBuilder sb = new StringBuilder(
-				CommandInterpreter.CONSTRUCTFIRSTOUT);
+		StringBuilder sb = new StringBuilder(CommandInterpreter.LOCALCONSTRUCT);
 		FileOutputFormat.setOutputPath(job,
 				new Path(sb.append(CommandInterpreter.postScript).toString()));
 		job.setMapperClass(LocalMapper.class);
 		job.setReducerClass(LocalReducer.class);
 		job.setPartitionerClass(LocalPartitioner.class);
+
 		long defaultBlockSize = 0;
 		// Get the number of mappers that will be launched for this task
 		// So we can determine the number of reducers
@@ -98,7 +105,7 @@ public class LocalIndexConstructor<MKIn, MVIn, MKOut, MVOut, Pred> extends
 				.getLength();
 		defaultBlockSize = fileSystem.getDefaultBlockSize(new Path(args[3]));
 		if (inputFileLength > 0 && defaultBlockSize > 0) {
-			numOfReduce = (int) (((inputFileLength / defaultBlockSize) + 1) * 2);
+			numOfReduce = (int) (((inputFileLength / defaultBlockSize) + 1) * CommandInterpreter.REDUCERPERSPLIT);
 		}
 		// set numOfReduce to the first valid number lte a valid number
 		// E.g. Quadtree can only support partitions of size 1+3n for n >= 0
@@ -107,6 +114,7 @@ public class LocalIndexConstructor<MKIn, MVIn, MKOut, MVOut, Pred> extends
 			numOfReduce = ((numOfReduce - 1) / (index.numSpaceParts - 1) + 1)
 					* (index.numSpaceParts - 1) + 1;
 		job.setNumReduceTasks(numOfReduce);
+
 		boolean succ = job.waitForCompletion(true);
 		if (!succ) {
 			fileSystem = FileSystem.get(getConf());
@@ -136,17 +144,15 @@ public class LocalIndexConstructor<MKIn, MVIn, MKOut, MVOut, Pred> extends
 
 		Parser<MKIn, MVIn, MKOut, MVOut> local;
 
-		@SuppressWarnings({ "unchecked", "rawtypes" })
+		@SuppressWarnings({ "unchecked" })
 		public void setup(Context context) {
 			// Give each mapper a copy of the parser
 			Configuration conf = context.getConfiguration();
 			try {
-				local = (Parser) Class.forName(conf.get("parserClass"))
-						.newInstance();
+				local = (Parser<MKIn, MVIn, MKOut, MVOut>) Class.forName(
+						conf.get("mapreduce.mapper.parserClass")).newInstance();
 			} catch (InstantiationException | IllegalAccessException
 					| ClassNotFoundException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
 			}
 		}
 
@@ -180,43 +186,64 @@ public class LocalIndexConstructor<MKIn, MVIn, MKOut, MVOut, Pred> extends
 	 *            The Mapper output/HSPIndex key
 	 * @param <MVOut>
 	 *            The Mapper output/HSPIndex record value
-	 * @param <Pred>
-	 *            The HSPIndex predicate type
 	 */
-	private static class LocalPartitioner<MKOut, MVOut, Pred> extends
+	private static class LocalPartitioner<MKOut, MVOut> extends
 			Partitioner<MKOut, MVOut> implements Configurable {
 		private Configuration conf;
-		HSPIndex<Pred,MKOut,MVOut> index = null;
+		private HSPIndex<MKOut, MVOut> index = null;
 
 		@SuppressWarnings("unchecked")
 		@Override
 		public int getPartition(MKOut key, MVOut value, int numOfReducers) {
-			try {
-				if(index == null){
-					index = (HSPIndex<Pred,MKOut,MVOut>) Class.forName(getConf().get("indexClass"))
-						.newInstance();
-					Pair<Pred, IntWritable> p = new Pair<Pred, IntWritable>();
-					FileSystem hdfs = FileSystem.get(getConf());
-					FSDataInputStream in = hdfs.open(new Path(
-							"localRoots/partRoots"));
-					int size = in.readInt();
-					for (int i = 0; i < size; i++){
-						p.readFields(in);
-						index.partRoots.add(p.copy());
-					}
-					in.close();
+			if (index == null) {
+				try {
+					index = (HSPIndex<MKOut, MVOut>) Class.forName(
+							conf.get("mapreduce.reducer.indexClass"))
+							.newInstance();
+				} catch (InstantiationException | IllegalAccessException
+						| ClassNotFoundException e) {
 				}
-				
-				
-				for (int i = 0; i < index.partRoots.size(); i++) {
-					if(index.consistent(index.partRoots.get(i).getFirst(), key, index.partRoots.get(i).getSecond().get()))
-						return i;
-				}
-				
-			} catch (Exception e) {
-
 			}
-			return numOfReducers;
+			if (index.globalRoot.getChildren().size() == 0) {
+				try {
+					FileSystem hdfs = FileSystem.get(getConf());
+					StringBuilder sb = new StringBuilder(
+							conf.get("mapreduce.partitioner.globalconstruct"));
+					sb.append(conf.get("mapreduce.partitioner.postscript"))
+							.toString();
+					Path globalIndexFile = new Path(sb.append("/")
+							.append("part-r-00000").toString());
+					FSDataInputStream in = hdfs.open(globalIndexFile);
+					HSPIndexNode<MKOut, MVOut> inIndex = null;
+					ArrayList<HSPIndexNode<MKOut, MVOut>> stack = new ArrayList<HSPIndexNode<MKOut, MVOut>>();
+					in.readBoolean();
+					index.globalRoot.readFields(in);
+					HSPIndexNode<MKOut, MVOut> parent = index.globalRoot;
+					while (in.available() != 0) {
+						if (in.readBoolean()) {
+							inIndex = new HSPIndexNode<MKOut, MVOut>();
+							inIndex.readFields(in);
+							inIndex.setParent(parent);
+							parent.getChildren().remove(0);
+							parent.getChildren().add(inIndex);
+							if (parent.getChildren().get(0).getPredicate() == null)
+								stack.add(parent);
+							parent = inIndex;
+						} else {
+							HSPReferenceNode<MKOut, MVOut> refNode = new HSPReferenceNode<MKOut, MVOut>();
+							refNode.readFields(in);
+							refNode.setParent(parent);
+							parent.getChildren().remove(0);
+							parent.getChildren().add(refNode);
+							if (parent.getChildren().get(0).getPredicate() != null)
+								parent = stack.remove(stack.size() - 1);
+						}
+					}
+				} catch (Exception e) {
+
+				}
+			}
+			return index.partition(key, value, numOfReducers);
 		}
 
 		@Override
@@ -246,15 +273,14 @@ public class LocalIndexConstructor<MKIn, MVIn, MKOut, MVOut, Pred> extends
 	 *            The Reducer key output type: this is HSPIndexNode
 	 * @param <RVOut>
 	 *            The Reducer value output type this is HSPLeafNode
-	 * @param <Pred>
-	 *            The HSPIndex Predicate type
 	 */
 	@SuppressWarnings("rawtypes")
-	private static class LocalReducer<MKOut, MVOut, Pred> extends
+	private static class LocalReducer<MKOut, MVOut> extends
 			Reducer<MKOut, MVOut, HSPIndexNode, HSPLeafNode> {
 
-		HSPNode<Pred, MKOut, MVOut> root = null;
-		HSPIndex<Pred, MKOut, MVOut> local = null;
+		HSPNode<MKOut, MVOut> root = null;
+		HSPIndex<MKOut, MVOut> local = null;
+		Predicate pred = null;
 		private int depth;
 
 		@SuppressWarnings("unchecked")
@@ -262,17 +288,20 @@ public class LocalIndexConstructor<MKIn, MVIn, MKOut, MVOut, Pred> extends
 			// Get each reducer a reference to the index, setup an empty leaf
 			// root, and set the depth of the root
 			try {
-				local = (HSPIndex) Class.forName(
-						context.getConfiguration().get("indexClass"))
+				local = (HSPIndex<MKOut, MVOut>) Class.forName(
+						context.getConfiguration().get(
+								"mapreduce.reducer.indexClass")).newInstance();
+				pred = (Predicate) Class.forName(
+						context.getConfiguration().get(
+								"mapreduce.partitioner.predicateClass"))
 						.newInstance();
 			} catch (InstantiationException | IllegalAccessException
 					| ClassNotFoundException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
 			}
 			int part = context.getConfiguration().getInt(
 					"mapreduce.task.partition", 0);
-			Pair<Pred, IntWritable> p = new Pair<Pred, IntWritable>();
+			Pair<Predicate, IntWritable> p = new Pair<Predicate, IntWritable>(
+					pred, new IntWritable(0));
 			try {
 				FileSystem hdfs = FileSystem.get(context.getConfiguration());
 				FSDataInputStream in = hdfs.open(new Path(
@@ -286,7 +315,7 @@ public class LocalIndexConstructor<MKIn, MVIn, MKOut, MVOut, Pred> extends
 			} catch (Exception e) {
 
 			}
-			root = new HSPLeafNode<Pred, MKOut, MVOut>(null, p.getFirst());
+			root = new HSPLeafNode<MKOut, MVOut>(null, p.getFirst());
 			depth = p.getSecond().get();
 		}
 
@@ -311,12 +340,12 @@ public class LocalIndexConstructor<MKIn, MVIn, MKOut, MVOut, Pred> extends
 			/*
 			 * Output the nodes in pre-order
 			 */
-			ArrayList<HSPNode<Pred, MKOut, MVOut>> stack = new ArrayList<HSPNode<Pred, MKOut, MVOut>>();
-			HSPNode<Pred, MKOut, MVOut> node = root;
+			ArrayList<HSPNode<MKOut, MVOut>> stack = new ArrayList<HSPNode<MKOut, MVOut>>();
+			HSPNode<MKOut, MVOut> node = root;
 			while (!(stack.size() == 0 && node == null)) {
 				if (node != null) {
-					if (node instanceof HSPIndexNode<?, ?, ?>) {
-						HSPIndexNode<Pred, MKOut, MVOut> temp = (HSPIndexNode<Pred, MKOut, MVOut>) node;
+					if (node instanceof HSPIndexNode<?, ?>) {
+						HSPIndexNode<MKOut, MVOut> temp = (HSPIndexNode<MKOut, MVOut>) node;
 						if (local.path == HSPIndex.PathShrink.TREE
 								&& temp.getChildren().size() == 1) {
 							// For any index node with a single child in a TREE
@@ -328,7 +357,7 @@ public class LocalIndexConstructor<MKIn, MVIn, MKOut, MVOut, Pred> extends
 							node.setPredicate(temp.getPredicate());
 							continue;
 						}
-						context.write( (HSPIndexNode) node, null);
+						context.write((HSPIndexNode) node, null);
 						for (int i = 0; i < temp.getChildren().size(); i++) {
 							stack.add(temp.getChildren().get(i));
 						}
