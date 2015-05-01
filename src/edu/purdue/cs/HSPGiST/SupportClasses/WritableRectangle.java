@@ -5,7 +5,7 @@ import java.io.DataOutput;
 import java.io.IOException;
 import java.util.Objects;
 
-import org.apache.hadoop.io.WritableComparable;
+import edu.purdue.cs.HSPGiST.AbstractClasses.Predicate;
 
 /**
  * Implementation of WritableRectangles
@@ -13,8 +13,7 @@ import org.apache.hadoop.io.WritableComparable;
  * @author Stefan Brinton
  *
  */
-public class WritableRectangle implements
-		WritableComparable<WritableRectangle>, Copyable<WritableRectangle>, Sized {
+public class WritableRectangle extends Predicate {
 	private double x;
 	private double y;
 	private double h;
@@ -103,8 +102,8 @@ public class WritableRectangle implements
 	public boolean contains(WritablePoint p) {
 		if (p == null)
 			return false;
-		return x <= p.getX() && p.getX() < x + w && y <= p.getY()
-				&& p.getY() < y + h;
+		return x <= p.getX() && p.getX() <= x + w && y <= p.getY()
+				&& p.getY() <= y + h;
 	}
 
 	/**
@@ -124,7 +123,7 @@ public class WritableRectangle implements
 		return false;
 	}
 
-	public boolean overlaps(WritableRectangle r) {
+	public boolean overlaps(WritableRectangle r){
 		WritablePoint p1 = new WritablePoint(x, y);
 		WritablePoint p2 = new WritablePoint(x + w, y);
 		WritablePoint p3 = new WritablePoint(x, y + h);
@@ -136,7 +135,7 @@ public class WritableRectangle implements
 		p1 = new WritablePoint(r.getX(), r.getY());
 		p2 = new WritablePoint(r.getX() + r.getW(), r.getY());
 		p3 = new WritablePoint(r.getX(), r.getY() + r.getH());
-		p3 = new WritablePoint(r.getX() + r.getW(), r.getY() + r.getH());
+		p4 = new WritablePoint(r.getX() + r.getW(), r.getY() + r.getH());
 		return contains(p1) || contains(p2) || contains(p3) || contains(p4);
 	}
 
@@ -150,7 +149,10 @@ public class WritableRectangle implements
 	}
 
 	@Override
-	public int compareTo(WritableRectangle o) {
+	public int compareTo(Predicate otter) {
+		if(!(otter instanceof WritableRectangle))
+			return -1;
+		WritableRectangle o = (WritableRectangle) otter;
 		if (equals(o))
 			return 0;
 		int ret = h * w < o.w * o.h ? -1 : (h * w == o.h * o.w ? 0 : 1);
@@ -199,5 +201,33 @@ public class WritableRectangle implements
 	public long getSize() {
 		//Divide by 8 for bits to bytes * 4 for 4 doubles
 		return Double.SIZE>>1;
+	}
+
+	@Override
+	public String convertToJSON() {
+		StringBuilder sb = new StringBuilder("[");
+		sb.append(x);
+		sb.append(',');
+		sb.append(y);
+		sb.append(',');
+		sb.append(w);
+		sb.append(',');
+		sb.append(h);
+		sb.append(']');
+		return sb.toString();
+	}
+
+	@Override
+	public void convertFromJSON(String input) {
+		if(!input.startsWith("[")){
+			//We are trying to parse something that isn't right
+			return;
+		}
+		String clean = input.substring(1, input.length()-1);
+		String[] fields = clean.split(",");
+		x = Double.parseDouble(fields[0]);
+		y = Double.parseDouble(fields[1]);
+		w = Double.parseDouble(fields[2]);
+		h = Double.parseDouble(fields[3]);
 	}
 }
